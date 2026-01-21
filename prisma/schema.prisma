@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ORG_ADMIN
+  OFFICER
+  REVIEWER
+}
+
+enum DocumentStatus {
+  DRAFT
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum Classification {
+  PUBLIC
+  INTERNAL
+  CONFIDENTIAL
+}
+
+enum OrganizationType {
+  MINISTRY
+  AGENCY
+  REGION
+}
+
+model Organization {
+  id        String           @id @default(uuid())
+  name      String
+  code      String           @unique
+  type      OrganizationType
+  isActive  Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  users     User[]
+  documents Document[]
+}
+
+model User {
+  id             String        @id @default(uuid())
+  fullName       String
+  email          String        @unique
+  passwordHash   String
+  role           Role          @default(OFFICER)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  documents      Document[]
+  workflowActions DocumentWorkflow[]
+}
+
+model Document {
+  id              String         @id @default(uuid())
+  title           String
+  referenceNumber String         @unique
+  status          DocumentStatus @default(DRAFT)
+  classification  Classification @default(INTERNAL)
+  fileUrl         String?
+  createdById     String
+  createdBy       User           @relation(fields: [createdById], references: [id])
+  organizationId  String
+  organization    Organization   @relation(fields: [organizationId], references: [id])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  workflows       DocumentWorkflow[]
+
+  // BlockchainAnchor (to be added later)
+}
+
+model DocumentWorkflow {
+  id           String         @id @default(uuid())
+  documentId   String
+  document     Document       @relation(fields: [documentId], references: [id])
+  stepName     String
+  assignedRole Role
+  status       DocumentStatus
+  actionById   String?
+  actionBy     User?          @relation(fields: [actionById], references: [id])
+  actionAt     DateTime?
+  createdAt    DateTime       @default(now())
+}
