@@ -14,11 +14,21 @@ enum Role {
   REVIEWER
 }
 
-enum DocumentStatus {
+enum LetterStatus {
   DRAFT
-  UNDER_REVIEW
-  APPROVED
-  REJECTED
+  SENT
+  RECEIVED
+  CC
+  ARCHIVED
+}
+
+enum LetterType {
+  HIERARCHICAL
+  CROSS_STRUCTURE
+  STAFF
+  C_STAFF
+  HEAD_OFFICE
+  GUEST
 }
 
 enum Classification {
@@ -31,62 +41,111 @@ enum OrganizationType {
   MINISTRY
   AGENCY
   REGION
+  SUB_ORGANIZATION
+  OFFICE
 }
 
 model Organization {
-  id        String           @id @default(uuid())
-  name      String
-  code      String           @unique
-  type      OrganizationType
-  isActive  Boolean          @default(true)
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-  users     User[]
-  documents Document[]
+  id                    String             @id @default(uuid())
+  name                  String
+  code                  String             @unique
+  type                  OrganizationType
+  parentOrganizationId  String?
+  parentOrganization    Organization?      @relation("OrgHierarchy", fields: [parentOrganizationId], references: [id])
+  subOrganizations      Organization[]     @relation("OrgHierarchy")
+  phoneNumber           String?
+  location              String?
+  isActive              Boolean            @default(true)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  
+  users                 User[]
+  sentLetters           Letter[]           @relation("SenderOrg")
+  receivedLetters       Letter[]           @relation("RecipientOrg")
+  ccLetters             LetterCC[]
 }
 
 model User {
-  id             String        @id @default(uuid())
-  fullName       String
-  email          String        @unique
-  passwordHash   String
-  role           Role          @default(OFFICER)
-  organizationId String?
-  organization   Organization? @relation(fields: [organizationId], references: [id])
-  isActive       Boolean       @default(true)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  documents      Document[]
-  workflowActions DocumentWorkflow[]
+  id                String        @id @default(uuid())
+  fullName          String
+  email             String        @unique
+  passwordHash      String
+  role              Role          @default(OFFICER)
+  position          String?
+  phoneNumber       String?
+  organizationId    String?
+  organization      Organization? @relation(fields: [organizationId], references: [id])
+  isActive          Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  createdLetters    Letter[]      @relation("LetterCreator")
+  receivedLetters   Letter[]      @relation("LetterRecipient")
 }
 
-model Document {
-  id              String         @id @default(uuid())
-  title           String
-  referenceNumber String         @unique
-  status          DocumentStatus @default(DRAFT)
-  classification  Classification @default(INTERNAL)
-  fileUrl         String?
-  createdById     String
-  createdBy       User           @relation(fields: [createdById], references: [id])
+model LetterTemplate {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  letterType  LetterType
+  content     String   @db.Text
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  letters     Letter[]
+}
+
+model Letter {
+  id                  String         @id @default(uuid())
+  referenceNumber     String         @unique
+  subject             String
+  content             String         @db.Text
+  letterType          LetterType
+  status              LetterStatus   @default(DRAFT)
+  classification      Classification @default(INTERNAL)
+  
+  senderOrgId         String
+  senderOrg           Organization   @relation("SenderOrg", fields: [senderOrgId], references: [id])
+  
+  recipientOrgId      String?
+  recipientOrg        Organization?  @relation("RecipientOrg", fields: [recipientOrgId], references: [id])
+  
+  recipientUserId     String?
+  recipientUser       User?          @relation("LetterRecipient", fields: [recipientUserId], references: [id])
+  
+  createdById         String
+  createdBy           User           @relation("LetterCreator", fields: [createdById], references: [id])
+  
+  templateId          String?
+  template            LetterTemplate? @relation(fields: [templateId], references: [id])
+  
+  letterDate          DateTime       @default(now())
+  sentAt              DateTime?
+  
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  
+  ccRecipients        LetterCC[]
+  attachments         LetterAttachment[]
+}
+
+model LetterCC {
+  id              String       @id @default(uuid())
+  letterId        String
+  letter          Letter       @relation(fields: [letterId], references: [id], onDelete: Cascade)
   organizationId  String
-  organization    Organization   @relation(fields: [organizationId], references: [id])
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  workflows       DocumentWorkflow[]
-
-  // BlockchainAnchor (to be added later)
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  createdAt       DateTime     @default(now())
+  
+  @@unique([letterId, organizationId])
 }
 
-model DocumentWorkflow {
-  id           String         @id @default(uuid())
-  documentId   String
-  document     Document       @relation(fields: [documentId], references: [id])
-  stepName     String
-  assignedRole Role
-  status       DocumentStatus
-  actionById   String?
-  actionBy     User?          @relation(fields: [actionById], references: [id])
-  actionAt     DateTime?
-  createdAt    DateTime       @default(now())
+model LetterAttachment {
+  id        String   @id @default(uuid())
+  letterId  String
+  letter    Letter   @relation(fields: [letterId], references: [id], onDelete: Cascade)
+  fileName  String
+  fileUrl   String
+  fileSize  Int
+  createdAt DateTime @default(now())
 }

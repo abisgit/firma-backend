@@ -6,6 +6,7 @@ import { errorHandler } from './middleware/error.middleware';
 import authRoutes from './modules/auth/auth.routes';
 import docRoutes from './modules/documents/documents.routes';
 import orgRoutes from './modules/organizations/organizations.routes';
+import templateRoutes from './modules/templates/templates.routes';
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use(express.json());
 app.use('/auth', authRoutes);
 app.use('/documents', docRoutes);
 app.use('/organizations', orgRoutes);
+app.use('/templates', templateRoutes);
 
 app.use(errorHandler);
 

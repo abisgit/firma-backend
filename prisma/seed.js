@@ -1,8 +1,8 @@
-import "dotenv/config";
-import { PrismaClient, Role, OrganizationType, LetterType, LetterStatus, Classification } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { Pool } from 'pg';
-import bcrypt from 'bcrypt';
+require('dotenv/config');
+const { PrismaClient } = require('@prisma/client');
+const { PrismaPg } = require('@prisma/adapter-pg');
+const { Pool } = require('pg');
+const bcrypt = require('bcrypt');
 
 const connectionString = process.env.DATABASE_URL;
 const pool = new Pool({ connectionString });
@@ -14,14 +14,20 @@ async function main() {
 
     console.log('🌱 Seeding database...');
 
+    // Clear existing data
+    await prisma.letterCC.deleteMany();
+    await prisma.letterAttachment.deleteMany();
+    await prisma.letter.deleteMany();
+    await prisma.letterTemplate.deleteMany();
+    await prisma.user.deleteMany();
+    await prisma.organization.deleteMany();
+
     // Create Main Organization
-    const mof = await prisma.organization.upsert({
-        where: { code: 'MOF' },
-        update: {},
-        create: {
+    const mof = await prisma.organization.create({
+        data: {
             name: 'Ministry of Finance',
             code: 'MOF',
-            type: OrganizationType.MINISTRY,
+            type: 'MINISTRY',
             phoneNumber: '+251-11-552-7000',
             location: 'Addis Ababa, Bole',
         },
@@ -29,79 +35,67 @@ async function main() {
     console.log('✅ Created main organization: Ministry of Finance');
 
     // Create Sub-Organizations
-    const budgetDept = await prisma.organization.upsert({
-        where: { code: 'MOF-BD' },
-        update: {},
-        create: {
+    const budgetDept = await prisma.organization.create({
+        data: {
             name: 'Budget Department',
             code: 'MOF-BD',
-            type: OrganizationType.SUB_ORGANIZATION,
+            type: 'SUB_ORGANIZATION',
             parentOrganizationId: mof.id,
             phoneNumber: '+251-11-552-7100',
             location: 'Main Office, Floor 3',
         },
     });
 
-    const hrDept = await prisma.organization.upsert({
-        where: { code: 'MOF-HR' },
-        update: {},
-        create: {
+    const hrDept = await prisma.organization.create({
+        data: {
             name: 'HR Department',
             code: 'MOF-HR',
-            type: OrganizationType.SUB_ORGANIZATION,
+            type: 'SUB_ORGANIZATION',
             parentOrganizationId: mof.id,
             phoneNumber: '+251-11-552-7200',
             location: 'Main Office, Floor 2',
         },
     });
 
-    const planningDept = await prisma.organization.upsert({
-        where: { code: 'MOF-PD' },
-        update: {},
-        create: {
+    const planningDept = await prisma.organization.create({
+        data: {
             name: 'Planning Department',
             code: 'MOF-PD',
-            type: OrganizationType.SUB_ORGANIZATION,
+            type: 'SUB_ORGANIZATION',
             parentOrganizationId: mof.id,
             phoneNumber: '+251-11-552-7300',
             location: 'Main Office, Floor 4',
         },
     });
 
-    // Create Offices under Departments
-    const budgetPlanningOffice = await prisma.organization.upsert({
-        where: { code: 'MOF-BD-BP' },
-        update: {},
-        create: {
+    // Create Offices
+    await prisma.organization.create({
+        data: {
             name: 'Budget Planning Office',
             code: 'MOF-BD-BP',
-            type: OrganizationType.OFFICE,
+            type: 'OFFICE',
             parentOrganizationId: budgetDept.id,
             phoneNumber: '+251-11-552-7110',
             location: 'Main Office, Floor 3, Room 301',
         },
     });
 
-    const budgetAnalysisOffice = await prisma.organization.upsert({
-        where: { code: 'MOF-BD-BA' },
-        update: {},
-        create: {
+    await prisma.organization.create({
+        data: {
             name: 'Budget Analysis Office',
             code: 'MOF-BD-BA',
-            type: OrganizationType.OFFICE,
+            type: 'OFFICE',
             parentOrganizationId: budgetDept.id,
             phoneNumber: '+251-11-552-7120',
             location: 'Main Office, Floor 3, Room 305',
         },
     });
 
-    const recruitmentOffice = await prisma.organization.upsert({
-        where: { code: 'MOF-HR-RC' },
-        update: {},
-        create: {
+    await prisma.organization.create({
+        data: {
             name: 'Recruitment Office',
             code: 'MOF-HR-RC',
-            type: OrganizationType.OFFICE,
+            type: 'OFFICE',
             parentOrganizationId: hrDept.id,
             phoneNumber: '+251-11-552-7210',
             location: 'Main Office, Floor 2, Room 201',
@@ -109,26 +103,22 @@ async function main() {
     });
 
     // Create Regional Offices
-    const regionalOromia = await prisma.organization.upsert({
-        where: { code: 'MOF-RO-OR' },
-        update: {},
-        create: {
+    await prisma.organization.create({
+        data: {
             name: 'Regional Office - Oromia',
             code: 'MOF-RO-OR',
-            type: OrganizationType.REGION,
+            type: 'REGION',
             parentOrganizationId: mof.id,
             phoneNumber: '+251-22-111-2222',
             location: 'Adama City',
         },
     });
 
-    const regionalAmhara = await prisma.organization.upsert({
-        where: { code: 'MOF-RO-AM' },
-        update: {},
-        create: {
+    await prisma.organization.create({
+        data: {
             name: 'Regional Office - Amhara',
             code: 'MOF-RO-AM',
-            type: OrganizationType.REGION,
+            type: 'REGION',
             parentOrganizationId: mof.id,
             phoneNumber: '+251-58-220-3333',
             location: 'Bahir Dar',
@@ -136,37 +126,31 @@ async function main() {
     });
 
     // Create External Organizations
-    const moh = await prisma.organization.upsert({
-        where: { code: 'MOH' },
-        update: {},
-        create: {
+    const moh = await prisma.organization.create({
+        data: {
             name: 'Ministry of Health',
             code: 'MOH',
-            type: OrganizationType.MINISTRY,
+            type: 'MINISTRY',
             phoneNumber: '+251-11-551-7011',
             location: 'Addis Ababa, Kirkos',
         },
     });
 
-    const moe = await prisma.organization.upsert({
-        where: { code: 'MOE' },
-        update: {},
-        create: {
+    const moe = await prisma.organization.create({
+        data: {
             name: 'Ministry of Education',
             code: 'MOE',
-            type: OrganizationType.MINISTRY,
+            type: 'MINISTRY',
             phoneNumber: '+251-11-155-0033',
             location: 'Addis Ababa, Arada',
         },
     });
 
-    const mop = await prisma.organization.upsert({
-        where: { code: 'MOP' },
-        update: {},
-        create: {
+    const mop = await prisma.organization.create({
+        data: {
             name: 'Ministry of Planning',
             code: 'MOP',
-            type: OrganizationType.MINISTRY,
+            type: 'MINISTRY',
             phoneNumber: '+251-11-646-0000',
             location: 'Addis Ababa, Bole',
         },
@@ -175,83 +159,71 @@ async function main() {
     console.log('✅ Created organizations and sub-organizations');
 
     // Create Users
-    const superAdmin = await prisma.user.upsert({
-        where: { email: 'admin@firma.gov' },
-        update: {},
-        create: {
+    await prisma.user.create({
+        data: {
             fullName: 'System Super Admin',
             email: 'admin@firma.gov',
             passwordHash,
-            role: Role.SUPER_ADMIN,
+            role: 'SUPER_ADMIN',
             position: 'System Administrator',
             phoneNumber: '+251-11-552-7000',
         },
     });
 
-    const mofAdmin = await prisma.user.upsert({
-        where: { email: 'mof_admin@firma.gov' },
-        update: {},
-        create: {
+    const mofAdmin = await prisma.user.create({
+        data: {
             fullName: 'MOF Administrator',
             email: 'mof_admin@firma.gov',
             passwordHash,
-            role: Role.ORG_ADMIN,
+            role: 'ORG_ADMIN',
             organizationId: mof.id,
             position: 'Organization Administrator',
             phoneNumber: '+251-11-552-7001',
         },
     });
 
-    const johnDoe = await prisma.user.upsert({
-        where: { email: 'john.doe@mof.gov' },
-        update: {},
-        create: {
+    const johnDoe = await prisma.user.create({
+        data: {
             fullName: 'John Doe',
             email: 'john.doe@mof.gov',
             passwordHash,
-            role: Role.OFFICER,
+            role: 'OFFICER',
             organizationId: budgetDept.id,
             position: 'Budget Analyst',
             phoneNumber: '+251-11-552-7101',
         },
     });
 
-    const janeSmith = await prisma.user.upsert({
-        where: { email: 'jane.smith@mof.gov' },
-        update: {},
-        create: {
+    const janeSmith = await prisma.user.create({
+        data: {
             fullName: 'Jane Smith',
             email: 'jane.smith@mof.gov',
             passwordHash,
-            role: Role.OFFICER,
+            role: 'OFFICER',
             organizationId: hrDept.id,
             position: 'HR Manager',
             phoneNumber: '+251-11-552-7201',
         },
     });
 
-    const ahmedHassan = await prisma.user.upsert({
-        where: { email: 'ahmed.hassan@mof.gov' },
-        update: {},
-        create: {
+    await prisma.user.create({
+        data: {
             fullName: 'Ahmed Hassan',
             email: 'ahmed.hassan@mof.gov',
             passwordHash,
-            role: Role.OFFICER,
+            role: 'OFFICER',
             organizationId: planningDept.id,
             position: 'Planning Officer',
             phoneNumber: '+251-11-552-7301',
         },
     });
 
-    const sarahJohnson = await prisma.user.upsert({
-        where: { email: 'sarah.johnson@mof.gov' },
-        update: {},
-        create: {
+    await prisma.user.create({
+        data: {
             fullName: 'Sarah Johnson',
             email: 'sarah.johnson@mof.gov',
             passwordHash,
-            role: Role.REVIEWER,
+            role: 'REVIEWER',
             organizationId: budgetDept.id,
             position: 'Senior Budget Reviewer',
             phoneNumber: '+251-11-552-7102',
@@ -261,10 +233,10 @@ async function main() {
     console.log('✅ Created users');
 
     // Create Letter Templates
-    const templates = [
-        {
+    await prisma.letterTemplate.create({
+        data: {
             name: 'Budget Approval Request',
-            letterType: LetterType.HIERARCHICAL,
+            letterType: 'HIERARCHICAL',
             content: `[Organization Letterhead]
 
 Date: [Date]
@@ -297,9 +269,12 @@ Respectfully,
 [Organization Name]
 [Contact Information]`,
         },
-        {
+    });
+
+    await prisma.letterTemplate.create({
+        data: {
             name: 'Staff Transfer Notification',
-            letterType: LetterType.STAFF,
+            letterType: 'STAFF',
             content: `[Organization Letterhead]
 
 Date: [Date]
@@ -332,9 +307,12 @@ Sincerely,
 [HR Department]
 [Contact Information]`,
         },
-        {
+    });
+
+    await prisma.letterTemplate.create({
+        data: {
             name: 'Inter-Department Coordination',
-            letterType: LetterType.CROSS_STRUCTURE,
+            letterType: 'CROSS_STRUCTURE',
             content: `[Organization Letterhead]
 
 Date: [Date]
@@ -369,9 +347,12 @@ Best regards,
 [Department]
 [Contact Information]`,
         },
-        {
+    });
+
+    await prisma.letterTemplate.create({
+        data: {
             name: 'Meeting Invitation',
-            letterType: LetterType.HEAD_OFFICE,
+            letterType: 'HEAD_OFFICE',
             content: `[Organization Letterhead]
 
 Date: [Date]
@@ -407,9 +388,12 @@ Regards,
 [Position]
 [Contact Information]`,
         },
-        {
+    });
+
+    await prisma.letterTemplate.create({
+        data: {
             name: 'Official Notice',
-            letterType: LetterType.HEAD_OFFICE,
+            letterType: 'HEAD_OFFICE',
             content: `[Organization Letterhead]
 
 Date: [Date]
@@ -437,9 +421,12 @@ By Order,
 [Position]
 [Organization Name]`,
         },
-        {
+    });
+
+    await prisma.letterTemplate.create({
+        data: {
             name: 'Guest Visit Notification',
-            letterType: LetterType.GUEST,
+            letterType: 'GUEST',
             content: `[Organization Letterhead]
 
 Date: [Date]
@@ -471,17 +458,7 @@ Sincerely,
 [Position]
 [Contact Information]`,
         },
-    ];
-
-    for (const template of templates) {
-        await prisma.letterTemplate.upsert({
-            where: {
-                name: template.name
-            },
-            update: {},
-            create: template,
-        });
-    }
+    });
 
     console.log('✅ Created letter templates');
 
@@ -491,9 +468,9 @@ Sincerely,
             referenceNumber: 'MOF/2026/001',
             subject: 'Budget Approval Request Q1 2026',
             content: 'This is the content of the budget approval request for Q1 2026...',
-            letterType: LetterType.HIERARCHICAL,
-            status: LetterStatus.SENT,
-            classification: Classification.INTERNAL,
+            letterType: 'HIERARCHICAL',
+            status: 'SENT',
+            classification: 'INTERNAL',
             senderOrgId: mof.id,
             recipientOrgId: mop.id,
             createdById: mofAdmin.id,
@@ -502,14 +479,14 @@ Sincerely,
         },
     });
 
-    const letter2 = await prisma.letter.create({
+    await prisma.letter.create({
         data: {
             referenceNumber: 'MOF/2026/002',
             subject: 'Staff Transfer Notification - John Doe',
             content: 'This letter serves to notify the transfer of John Doe...',
-            letterType: LetterType.STAFF,
-            status: LetterStatus.DRAFT,
-            classification: Classification.INTERNAL,
+            letterType: 'STAFF',
+            status: 'DRAFT',
+            classification: 'INTERNAL',
             senderOrgId: hrDept.id,
             recipientUserId: johnDoe.id,
             createdById: janeSmith.id,
@@ -517,14 +494,14 @@ Sincerely,
         },
     });
 
-    const letter3 = await prisma.letter.create({
+    await prisma.letter.create({
         data: {
             referenceNumber: 'MOF/2026/003',
             subject: 'Inter-Department Coordination Meeting',
             content: 'Request for coordination meeting between departments...',
-            letterType: LetterType.CROSS_STRUCTURE,
-            status: LetterStatus.SENT,
-            classification: Classification.INTERNAL,
+            letterType: 'CROSS_STRUCTURE',
+            status: 'SENT',
+            classification: 'INTERNAL',
             senderOrgId: budgetDept.id,
             recipientOrgId: moh.id,
             createdById: johnDoe.id,
