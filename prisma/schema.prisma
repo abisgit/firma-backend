@@ -177,6 +177,7 @@ model Document {
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
 
+  classification Classification @default(INTERNAL)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
