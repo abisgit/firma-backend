@@ -70,7 +70,9 @@ export const getMyStamps = async (req: AuthRequest, res: Response, next: NextFun
 
 export const deleteStamp = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const { id } = req.params;
+        // const { id } = req.params;
+        const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
         const { userId } = req.user!;
 
         const stamp = await prisma.stamp.findUnique({

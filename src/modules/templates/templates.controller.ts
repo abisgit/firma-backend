@@ -31,7 +31,8 @@ export const getTemplates = async (req: Request, res: Response) => {
 
 export const getTemplateById = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        // const { id } = req.params;
+        const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
         const template = await prisma.letterTemplate.findUnique({
             where: { id },
@@ -71,7 +72,9 @@ export const createTemplate = async (req: Request, res: Response) => {
 
 export const updateTemplate = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        // const { id } = req.params;
+        const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
         const validatedData = templateSchema.partial().parse(req.body);
 
         const template = await prisma.letterTemplate.update({
@@ -94,7 +97,8 @@ export const updateTemplate = async (req: Request, res: Response) => {
 
 export const deleteTemplate = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        // const { id } = req.params;
+        const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
         await prisma.letterTemplate.delete({
             where: { id },

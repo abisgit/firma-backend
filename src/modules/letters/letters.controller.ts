@@ -92,7 +92,9 @@ export const getLetterByRef = async (req: AuthRequest, res: Response, next: Next
 
 export const getLetterById = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const { id } = req.params;
+        // const { id } = req.params;
+        const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
         const letter = await prisma.letter.findUnique({
             where: { id },
             include: {
@@ -115,7 +117,9 @@ export const getLetterById = async (req: AuthRequest, res: Response, next: NextF
 
 export const updateStampPosition = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const { id } = req.params;
+        // const { id } = req.params;
+        const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
         const { stampId, stampX, stampY } = req.body;
 
         const letter = await prisma.letter.update({
