@@ -165,7 +165,7 @@ model Document {
   title       String
   description String?
   fileName    String
-  fileUrl     String
+  fileUrl     String?
   fileSize    Int
 
   ownerId     String?
