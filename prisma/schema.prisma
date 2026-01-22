@@ -63,6 +63,8 @@ model Organization {
   sentLetters     Letter[]   @relation("SenderOrg")
   receivedLetters Letter[]   @relation("RecipientOrg")
   ccLetters       LetterCC[]
+
+  documents Document[]
 }
 
 model User {
@@ -170,6 +172,9 @@ model Document {
   owner       User?   @relation("DocumentOwner", fields: [ownerId], references: [id])
   createdBy   User    @relation("DocumentCreator", fields: [createdById], references: [id])
   createdById String
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
