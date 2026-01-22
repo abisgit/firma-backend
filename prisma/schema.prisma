@@ -46,102 +46,104 @@ enum OrganizationType {
 }
 
 model Organization {
-  id                    String             @id @default(uuid())
-  name                  String
-  code                  String             @unique
-  type                  OrganizationType
-  parentOrganizationId  String?
-  parentOrganization    Organization?      @relation("OrgHierarchy", fields: [parentOrganizationId], references: [id])
-  subOrganizations      Organization[]     @relation("OrgHierarchy")
-  phoneNumber           String?
-  location              String?
-  isActive              Boolean            @default(true)
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  
-  users                 User[]
-  sentLetters           Letter[]           @relation("SenderOrg")
-  receivedLetters       Letter[]           @relation("RecipientOrg")
-  ccLetters             LetterCC[]
+  id                   String           @id @default(uuid())
+  name                 String
+  code                 String           @unique
+  type                 OrganizationType
+  parentOrganizationId String?
+  parentOrganization   Organization?    @relation("OrgHierarchy", fields: [parentOrganizationId], references: [id])
+  subOrganizations     Organization[]   @relation("OrgHierarchy")
+  phoneNumber          String?
+  location             String?
+  isActive             Boolean          @default(true)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  users           User[]
+  sentLetters     Letter[]   @relation("SenderOrg")
+  receivedLetters Letter[]   @relation("RecipientOrg")
+  ccLetters       LetterCC[]
 }
 
 model User {
-  id                String        @id @default(uuid())
-  fullName          String
-  email             String        @unique
-  passwordHash      String
-  role              Role          @default(OFFICER)
-  position          String?
-  phoneNumber       String?
-  organizationId    String?
-  organization      Organization? @relation(fields: [organizationId], references: [id])
-  isActive          Boolean       @default(true)
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  
-  createdLetters    Letter[]      @relation("LetterCreator")
-  receivedLetters   Letter[]      @relation("LetterRecipient")
-  stamps            Stamp[]
+  id             String        @id @default(uuid())
+  fullName       String
+  email          String        @unique
+  passwordHash   String
+  role           Role          @default(OFFICER)
+  position       String?
+  phoneNumber    String?
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  createdLetters  Letter[] @relation("LetterCreator")
+  receivedLetters Letter[] @relation("LetterRecipient")
+  stamps          Stamp[]
+
+  documents Document[] // ✅ ADD THIS
 }
 
 model LetterTemplate {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  letterType  LetterType
-  content     String   @db.Text
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  letters     Letter[]
+  id         String     @id @default(uuid())
+  name       String     @unique
+  letterType LetterType
+  content    String     @db.Text
+  isActive   Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  letters Letter[]
 }
 
 model Letter {
-  id                  String         @id @default(uuid())
-  referenceNumber     String         @unique
-  subject             String
-  content             String         @db.Text
-  letterType          LetterType
-  status              LetterStatus   @default(DRAFT)
-  classification      Classification @default(INTERNAL)
-  
-  senderOrgId         String
-  senderOrg           Organization   @relation("SenderOrg", fields: [senderOrgId], references: [id])
-  
-  recipientOrgId      String?
-  recipientOrg        Organization?  @relation("RecipientOrg", fields: [recipientOrgId], references: [id])
-  
-  recipientUserId     String?
-  recipientUser       User?          @relation("LetterRecipient", fields: [recipientUserId], references: [id])
-  
-  createdById         String
-  createdBy           User           @relation("LetterCreator", fields: [createdById], references: [id])
-  
-  templateId          String?
-  template            LetterTemplate? @relation(fields: [templateId], references: [id])
-  stampId             Int?
-  stamp               Stamp? @relation(fields: [stampId], references: [id])
-  stampX              Float?
-  stampY              Float?
-  
-  letterDate          DateTime       @default(now())
-  sentAt              DateTime?
-  
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
-  
-  ccRecipients        LetterCC[]
-  attachments         LetterAttachment[]
+  id              String         @id @default(uuid())
+  referenceNumber String         @unique
+  subject         String
+  content         String         @db.Text
+  letterType      LetterType
+  status          LetterStatus   @default(DRAFT)
+  classification  Classification @default(INTERNAL)
+
+  senderOrgId String
+  senderOrg   Organization @relation("SenderOrg", fields: [senderOrgId], references: [id])
+
+  recipientOrgId String?
+  recipientOrg   Organization? @relation("RecipientOrg", fields: [recipientOrgId], references: [id])
+
+  recipientUserId String?
+  recipientUser   User?   @relation("LetterRecipient", fields: [recipientUserId], references: [id])
+
+  createdById String
+  createdBy   User   @relation("LetterCreator", fields: [createdById], references: [id])
+
+  templateId String?
+  template   LetterTemplate? @relation(fields: [templateId], references: [id])
+  stampId    Int?
+  stamp      Stamp?          @relation(fields: [stampId], references: [id])
+  stampX     Float?
+  stampY     Float?
+
+  letterDate DateTime  @default(now())
+  sentAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ccRecipients LetterCC[]
+  attachments  LetterAttachment[]
 }
 
 model LetterCC {
-  id              String       @id @default(uuid())
-  letterId        String
-  letter          Letter       @relation(fields: [letterId], references: [id], onDelete: Cascade)
-  organizationId  String
-  organization    Organization @relation(fields: [organizationId], references: [id])
-  createdAt       DateTime     @default(now())
-  
+  id             String       @id @default(uuid())
+  letterId       String
+  letter         Letter       @relation(fields: [letterId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+
   @@unique([letterId, organizationId])
 }
 
@@ -155,12 +157,27 @@ model LetterAttachment {
   createdAt DateTime @default(now())
 }
 
+model Document {
+  id          String  @id @default(uuid())
+  title       String
+  description String?
+  fileName    String
+  fileUrl     String
+  fileSize    Int
+
+  ownerId String?
+  owner   User?   @relation(fields: [ownerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Stamp {
   id        Int      @id @default(autoincrement())
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   imageUrl  String
   createdAt DateTime @default(now())
-  
-  letters   Letter[]
+
+  letters Letter[]
 }
