@@ -83,7 +83,8 @@ model User {
   receivedLetters Letter[] @relation("LetterRecipient")
   stamps          Stamp[]
 
-  documents Document[] // ✅ ADD THIS
+  documents        Document[] @relation("DocumentOwner")
+  createdDocuments Document[] @relation("DocumentCreator")
 }
 
 model LetterTemplate {
@@ -165,8 +166,10 @@ model Document {
   fileUrl     String
   fileSize    Int
 
-  ownerId String?
-  owner   User?   @relation(fields: [ownerId], references: [id])
+  ownerId     String?
+  owner       User?   @relation("DocumentOwner", fields: [ownerId], references: [id])
+  createdBy   User    @relation("DocumentCreator", fields: [createdById], references: [id])
+  createdById String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
