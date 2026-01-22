@@ -81,6 +81,7 @@ model User {
   
   createdLetters    Letter[]      @relation("LetterCreator")
   receivedLetters   Letter[]      @relation("LetterRecipient")
+  stamps            Stamp[]
 }
 
 model LetterTemplate {
@@ -118,6 +119,10 @@ model Letter {
   
   templateId          String?
   template            LetterTemplate? @relation(fields: [templateId], references: [id])
+  stampId             Int?
+  stamp               Stamp? @relation(fields: [stampId], references: [id])
+  stampX              Float?
+  stampY              Float?
   
   letterDate          DateTime       @default(now())
   sentAt              DateTime?
@@ -148,4 +153,14 @@ model LetterAttachment {
   fileUrl   String
   fileSize  Int
   createdAt DateTime @default(now())
+}
+
+model Stamp {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  imageUrl  String
+  createdAt DateTime @default(now())
+  
+  letters   Letter[]
 }

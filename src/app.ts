@@ -8,17 +8,26 @@ import docRoutes from './modules/documents/documents.routes';
 import orgRoutes from './modules/organizations/organizations.routes';
 import templateRoutes from './modules/templates/templates.routes';
 
+import stampRoutes from './modules/stamps/stamps.routes';
+import letterRoutes from './modules/letters/letters.routes';
+import path from 'path';
+
+// ... imports
+
 const app = express();
 
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: false })); // Allow loading images
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
 
 // Main Routes
 app.use('/auth', authRoutes);
 app.use('/documents', docRoutes);
 app.use('/organizations', orgRoutes);
 app.use('/templates', templateRoutes);
+app.use('/stamps', stampRoutes);
+app.use('/letters', letterRoutes);
 
 app.use(errorHandler);
 
