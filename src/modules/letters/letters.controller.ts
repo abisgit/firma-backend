@@ -375,7 +375,9 @@ export const createLetter = async (req: AuthRequest, res: Response, next: NextFu
 
 export const getLetterByRef = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { org, year, seq } = req.params;
+    const org = Array.isArray(req.params.org) ? req.params.org[0] : req.params.org;
+    const year = Array.isArray(req.params.year) ? req.params.year[0] : req.params.year;
+    const seq = Array.isArray(req.params.seq) ? req.params.seq[0] : req.params.seq;
     const referenceNumber = `${org}/${year}/${seq}`;
 
     const letter = await prisma.letter.findUnique({

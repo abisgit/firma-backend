@@ -42,7 +42,7 @@ export const getSubOrganizations = async (req: Request, res: Response, next: Nex
 
 export const getOrganization = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { id } = req.params;
+        const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
         const org = await prisma.organization.findFirst({
             where: {
                 OR: [
@@ -84,7 +84,7 @@ export const createOrganization = async (req: Request, res: Response, next: Next
 
 export const updateOrganization = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { id } = req.params;
+        const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
         // make schema partial for updates
         const updateSchema = orgSchema.partial();
         const data = updateSchema.parse(req.body);
