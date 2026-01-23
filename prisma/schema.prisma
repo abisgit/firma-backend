@@ -65,6 +65,8 @@ model Organization {
   ccLetters       LetterCC[]
 
   documents Document[]
+
+  letterCounters LetterCounter[]
 }
 
 model User {
@@ -109,6 +111,7 @@ model Letter {
   letterType      LetterType
   status          LetterStatus   @default(DRAFT)
   classification  Classification @default(INTERNAL)
+  headerImage     String?
 
   senderOrgId String
   senderOrg   Organization @relation("SenderOrg", fields: [senderOrgId], references: [id])
@@ -160,14 +163,25 @@ model LetterAttachment {
   createdAt DateTime @default(now())
 }
 
+model LetterCounter {
+  id             String        @id @default(uuid())
+  orgId          String
+  year           Int
+  value          Int
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId String?
+
+  @@unique([orgId, year])
+}
+
 model Document {
-  id          String  @id @default(uuid())
-  title       String
+  id              String  @id @default(uuid())
+  title           String
   referenceNumber String  @unique
-  description String?
-  fileName    String
-  fileUrl     String?
-  fileSize    Int
+  description     String?
+  fileName        String
+  fileUrl         String?
+  fileSize        Int
 
   ownerId     String?
   owner       User?   @relation("DocumentOwner", fields: [ownerId], references: [id])
@@ -178,8 +192,8 @@ model Document {
   organization   Organization? @relation(fields: [organizationId], references: [id])
 
   classification Classification @default(INTERNAL)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 }
 
 model Stamp {

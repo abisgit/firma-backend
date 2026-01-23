@@ -548,6 +548,22 @@ Sincerely,
         },
     });
 
+    // Create Letter Counter for MOF to match seeded letter (MOF/2026/001)
+    await prisma.letterCounter.upsert({
+        where: {
+            orgId_year: {
+                orgId: mof.id,
+                year: 2026
+            }
+        },
+        update: {},
+        create: {
+            orgId: mof.id,
+            year: 2026,
+            value: 1
+        }
+    });
+
     console.log('✅ Created sample letters');
 
     console.log('\n🎉 Database seeding completed successfully!');
