@@ -30,6 +30,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
         const user = await prisma.user.findUnique({
             where: { email },
+            include: { organization: true }
         });
 
         if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
@@ -50,6 +51,10 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
                 email: user.email,
                 role: user.role,
                 organizationId: user.organizationId,
+                organization: user.organization ? {
+                    name: user.organization.name,
+                    code: user.organization.code
+                } : null
             },
         });
     } catch (error) {

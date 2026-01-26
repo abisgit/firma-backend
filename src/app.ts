@@ -13,6 +13,7 @@ import letterRoutes from './modules/letters/letters.routes';
 import userRoutes from './modules/users/users.routes';
 import messageRoutes from './modules/messages/messages.routes';
 import marketingRoutes from './modules/marketing/marketing.routes';
+import tenantRoutes from './modules/tenants/tenants.routes';
 import path from 'path';
 
 // ... imports
@@ -35,6 +36,7 @@ app.use('/letters', letterRoutes);
 app.use('/users', userRoutes);
 app.use('/messages', messageRoutes);
 app.use('/marketing', marketingRoutes);
+app.use('/tenants', tenantRoutes);
 
 app.use(errorHandler);
 

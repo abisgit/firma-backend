@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import prisma from '../../config/db';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
+import { AuthRequest } from '../../middleware/auth.middleware';
 
 const userSchema = z.object({
     fullName: z.string(),
@@ -13,10 +14,22 @@ const userSchema = z.object({
     organizationId: z.string().optional(),
 });
 
-export const getUsers = async (req: Request, res: Response, next: NextFunction) => {
+export const getUsers = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
+        const { organizationId, role } = req.user!;
+        let where = {};
+
+        if (role !== 'SUPER_ADMIN') {
+            if (!organizationId) {
+                return res.status(400).json({ message: 'User must belong to an organization' });
+            }
+            where = { organizationId };
+        }
+
         const users = await prisma.user.findMany({
-            include: { organization: true }
+            where,
+            include: { organization: true },
+            orderBy: { createdAt: 'desc' }
         });
         res.json(users);
     } catch (error) {

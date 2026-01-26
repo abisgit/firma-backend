@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import prisma from '../../config/db';
+import { AuthRequest } from '../../middleware/auth.middleware';
 
 const templateSchema = z.object({
   name: z.string().min(1),
@@ -16,13 +17,22 @@ const templateSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-export const getTemplates = async (req: Request, res: Response, next: NextFunction) => {
+export const getTemplates = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { type, active } = req.query;
+    const { organizationId, role } = req.user!;
 
     const where: any = {};
     if (type) where.letterType = type;
     if (active !== undefined) where.isActive = active === 'true';
+
+    // Filter by organization if not SUPER_ADMIN
+    if (role !== 'SUPER_ADMIN') {
+      where.OR = [
+        { organizationId: organizationId },
+        { organizationId: null } // Show global templates too
+      ];
+    }
 
     const templates = await prisma.letterTemplate.findMany({
       where,
@@ -35,9 +45,10 @@ export const getTemplates = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
-export const getTemplateById = async (req: Request, res: Response, next: NextFunction) => {
+export const getTemplateById = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const { organizationId, role } = req.user!;
 
     const template = await prisma.letterTemplate.findUnique({
       where: { id },
@@ -45,18 +56,27 @@ export const getTemplateById = async (req: Request, res: Response, next: NextFun
 
     if (!template) return res.status(404).json({ message: 'Template not found' });
 
+    // Authorization check
+    if (role !== 'SUPER_ADMIN' && template.organizationId && template.organizationId !== organizationId) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
     res.json(template);
   } catch (error) {
     next(error);
   }
 };
 
-export const createTemplate = async (req: Request, res: Response, next: NextFunction) => {
+export const createTemplate = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const validatedData = templateSchema.parse(req.body);
+    const { organizationId, role } = req.user!;
 
     const template = await prisma.letterTemplate.create({
-      data: validatedData,
+      data: {
+        ...validatedData,
+        organizationId: role === 'SUPER_ADMIN' ? null : organizationId
+      },
     });
 
     res.status(201).json(template);

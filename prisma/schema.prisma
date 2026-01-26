@@ -53,6 +53,23 @@ enum OrganizationType {
   REGION
   SUB_ORGANIZATION
   OFFICE
+  SOE
+  ENTERPRISE
+}
+
+enum SubscriptionTier {
+  STARTER
+  CONSORTIUM
+  NATIONAL
+  ENTERPRISE_LITE
+}
+
+enum TenantStatus {
+  PENDING
+  REVIEWING
+  APPROVED
+  REJECTED
+  PILOT
 }
 
 model Organization {
@@ -66,6 +83,9 @@ model Organization {
   phoneNumber          String?
   location             String?
   isActive             Boolean          @default(true)
+  status               TenantStatus     @default(APPROVED) // Existing ones are approved by default
+  subscriptionTier     SubscriptionTier @default(STARTER)
+  maxUsers             Int              @default(100)
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt
 
@@ -76,8 +96,27 @@ model Organization {
 
   documents Document[]
 
-  letterCounters LetterCounter[]
-  receivedMessages Message[] @relation("RecipientOrg")
+  letterCounters   LetterCounter[]
+  receivedMessages Message[]       @relation("RecipientOrg")
+  templates        LetterTemplate[]
+}
+
+model RegistrationRequest {
+  id               String           @id @default(uuid())
+  orgName          String
+  orgType          OrganizationType
+  orgCode          String           @unique
+  contactPerson    String
+  officialEmail    String
+  identitySystem   String // LDAP, PKI, None
+  phone            String?
+  intendedUse      String?          @db.Text
+  status           TenantStatus     @default(PENDING)
+  assignedTier     SubscriptionTier?
+  reviewedById     String?
+  reviewedBy       User?            @relation("RequestReviewer", fields: [reviewedById], references: [id])
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 }
 
 model User {
@@ -101,18 +140,23 @@ model User {
   documents        Document[] @relation("DocumentOwner")
   createdDocuments Document[] @relation("DocumentCreator")
   sentMessages Message[] @relation("MessageSender")
+  reviewedRequests RegistrationRequest[] @relation("RequestReviewer")
 }
 
 model LetterTemplate {
-  id         String     @id @default(uuid())
-  name       String     @unique
-  letterType LetterType
-  content    String     @db.Text
-  isActive   Boolean    @default(true)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  id             String       @id @default(uuid())
+  name           String
+  letterType     LetterType
+  content        String       @db.Text
+  isActive       Boolean      @default(true)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   letters Letter[]
+
+  @@unique([name, organizationId])
 }
 
 model Letter {

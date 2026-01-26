@@ -4,7 +4,8 @@ import {
     createOrganization,
     getOrganization,
     updateOrganization,
-    getSubOrganizations
+    getSubOrganizations,
+    getOrgStats
 } from './organizations.controller';
 import { authMiddleware } from '../../middleware/auth.middleware';
 import { rbacMiddleware } from '../../middleware/rbac.middleware';
@@ -20,6 +21,7 @@ router.post('/', authMiddleware, rbacMiddleware(['SUPER_ADMIN']), createOrganiza
 
 // Specific Organization operations
 router.get('/:id', authMiddleware, getOrganization);
+router.get('/:id/stats', authMiddleware, getOrgStats);
 router.put('/:id', authMiddleware, rbacMiddleware(['SUPER_ADMIN', 'ORG_ADMIN']), updateOrganization);
 
 export default router;

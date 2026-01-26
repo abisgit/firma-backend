@@ -102,3 +102,43 @@ export const updateOrganization = async (req: Request, res: Response, next: Next
         next(error);
     }
 };
+
+export const getOrgStats = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const orgId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+        if (!orgId) return res.status(400).json({ message: 'Org ID required' });
+
+        const [
+            subOrgs,
+            employees,
+            sentToOrgs,
+            sentToEmployees,
+            appsReceived,
+            ccToUs,
+            received,
+            drafts
+        ] = await Promise.all([
+            prisma.organization.count({ where: { parentOrganizationId: orgId } }),
+            prisma.user.count({ where: { organizationId: orgId } }),
+            prisma.letter.count({ where: { senderOrgId: orgId, recipientOrgId: { not: null }, status: 'SENT' } }),
+            prisma.letter.count({ where: { senderOrgId: orgId, recipientUserId: { not: null }, status: 'SENT' } }),
+            prisma.letter.count({ where: { recipientOrgId: orgId, letterType: 'GUEST' } }),
+            prisma.letterCC.count({ where: { organizationId: orgId } }),
+            prisma.letter.count({ where: { recipientOrgId: orgId, status: 'SENT' } }),
+            prisma.letter.count({ where: { senderOrgId: orgId, status: 'DRAFT' } })
+        ]);
+
+        res.json({
+            subOrgs,
+            employees,
+            sentToOrgs,
+            sentToEmployees,
+            appsReceived,
+            ccToUs,
+            received,
+            drafts
+        });
+    } catch (error) {
+        next(error);
+    }
+};
