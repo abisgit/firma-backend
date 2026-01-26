@@ -11,6 +11,8 @@ import templateRoutes from './modules/templates/templates.routes';
 import stampRoutes from './modules/stamps/stamps.routes';
 import letterRoutes from './modules/letters/letters.routes';
 import userRoutes from './modules/users/users.routes';
+import messageRoutes from './modules/messages/messages.routes';
+import marketingRoutes from './modules/marketing/marketing.routes';
 import path from 'path';
 
 // ... imports
@@ -31,6 +33,8 @@ app.use('/templates', templateRoutes);
 app.use('/stamps', stampRoutes);
 app.use('/letters', letterRoutes);
 app.use('/users', userRoutes);
+app.use('/messages', messageRoutes);
+app.use('/marketing', marketingRoutes);
 
 app.use(errorHandler);
 

@@ -37,6 +37,29 @@ export const createLetter = async (req: AuthRequest, res: Response, next: NextFu
   try {
     const data = letterSchema.parse(req.body);
     const { userId, organizationId } = req.user!;
+    // For APPLICANT role, handle specially
+    if (req.user?.role === 'APPLICANT') {
+      const year = new Date().getFullYear();
+      const count = await prisma.letter.count({
+        where: {
+          createdById: userId,
+          referenceNumber: { startsWith: `APP/${year}/` }
+        }
+      });
+      const seq = (count + 1).toString().padStart(4, '0');
+      const referenceNumber = `APP/${year}/${seq}`;
+
+      const letter = await prisma.letter.create({
+        data: {
+          ...data,
+          referenceNumber,
+          createdById: userId,
+          letterType: 'GUEST' as any,
+          status: 'SENT' as any,
+        } as any,
+      });
+      return res.status(201).json(letter);
+    }
 
     if (!organizationId) {
       return res.status(400).json({ message: 'User must belong to an organization' });
@@ -457,7 +480,9 @@ export const getLetters = async (req: AuthRequest, res: Response, next: NextFunc
 
     let where: any = {};
 
-    if (role !== 'SUPER_ADMIN') {
+    if (role === 'APPLICANT') {
+      where = { createdById: userId };
+    } else if (role !== 'SUPER_ADMIN') {
       if (!organizationId) {
         return res.status(400).json({ message: 'User must belong to an organization' });
       }
@@ -508,6 +533,21 @@ export const getPublicLetter = async (req: Request, res: Response, next: NextFun
     if (!letter) {
       return res.status(404).json({ message: 'Letter not found' });
     }
+
+    res.json(letter);
+  } catch (error) {
+    next(error);
+  }
+};
+export const updateApplicationStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const { status } = req.body; // status is of type ApplicationStatus enum
+
+    const letter = await prisma.letter.update({
+      where: { id: id as string },
+      data: { applicationStatus: status }
+    });
 
     res.json(letter);
   } catch (error) {

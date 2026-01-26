@@ -13,6 +13,15 @@ enum Role {
   HR
   OFFICER
   REVIEWER
+  APPLICANT
+}
+
+enum ApplicationStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  ADDITIONAL_INFO_REQUIRED
 }
 
 enum LetterStatus {
@@ -68,6 +77,7 @@ model Organization {
   documents Document[]
 
   letterCounters LetterCounter[]
+  receivedMessages Message[] @relation("RecipientOrg")
 }
 
 model User {
@@ -90,6 +100,7 @@ model User {
 
   documents        Document[] @relation("DocumentOwner")
   createdDocuments Document[] @relation("DocumentCreator")
+  sentMessages Message[] @relation("MessageSender")
 }
 
 model LetterTemplate {
@@ -114,8 +125,8 @@ model Letter {
   classification  Classification @default(INTERNAL)
   headerImage     String?
 
-  senderOrgId String
-  senderOrg   Organization @relation("SenderOrg", fields: [senderOrgId], references: [id])
+  senderOrgId String?
+  senderOrg   Organization? @relation("SenderOrg", fields: [senderOrgId], references: [id])
 
   recipientOrgId String?
   recipientOrg   Organization? @relation("RecipientOrg", fields: [recipientOrgId], references: [id])
@@ -141,6 +152,24 @@ model Letter {
 
   ccRecipients LetterCC[]
   attachments  LetterAttachment[]
+  
+  applicationStatus   ApplicationStatus @default(PENDING)
+  messages            Message[]
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  content   String   @db.Text
+  letterId  String?
+  letter    Letter?  @relation(fields: [letterId], references: [id])
+  senderId  String
+  sender    User     @relation("MessageSender", fields: [senderId], references: [id])
+  
+  recipientOrgId String?
+  recipientOrg   Organization? @relation("RecipientOrg", fields: [recipientOrgId], references: [id])
+  
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 
 model LetterCC {
@@ -205,4 +234,12 @@ model Stamp {
   createdAt DateTime @default(now())
 
   letters Letter[]
+}
+
+model LandingPageContent {
+  id           String   @id @default("hero")
+  heroTitle    String   @default("IAM for everyone in your organization.")
+  heroDesc     String   @default("The market leader trusted by 1.7 million customers. Manage your official correspondence with the security and efficiency of FIRMA.")
+  featuresJson String   @default("[]")
+  updatedAt    DateTime @updatedAt
 }

@@ -7,7 +7,8 @@ import {
     getLetterById,
     updateStampPosition,
     getLetters,
-    getPublicLetter
+    getPublicLetter,
+    updateApplicationStatus
 } from './letters.controller';
 
 const router = Router();
@@ -22,5 +23,6 @@ router.post('/', createLetter);
 router.get('/:org/:year/:seq', getLetterByRef);
 router.get('/:id', getLetterById);
 router.put('/:id/stamp', updateStampPosition);
+router.put('/:id/status', updateApplicationStatus);
 
 export default router;

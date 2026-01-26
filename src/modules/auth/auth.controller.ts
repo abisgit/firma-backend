@@ -14,8 +14,14 @@ const registerSchema = z.object({
     fullName: z.string(),
     email: z.string().email(),
     password: z.string().min(6),
-    role: z.enum(['SUPER_ADMIN', 'ORG_ADMIN', 'OFFICER', 'REVIEWER']),
+    role: z.enum(['SUPER_ADMIN', 'ORG_ADMIN', 'HR', 'OFFICER', 'REVIEWER', 'APPLICANT']),
     organizationId: z.string().optional(),
+});
+
+const publicRegisterSchema = z.object({
+    fullName: z.string(),
+    email: z.string().email(),
+    password: z.string().min(6),
 });
 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
@@ -68,6 +74,32 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 
         res.status(201).json({
             message: 'User created successfully',
+            user: {
+                id: user.id,
+                email: user.email,
+                role: user.role,
+            },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+export const publicRegister = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const data = publicRegisterSchema.parse(req.body);
+        const passwordHash = await bcrypt.hash(data.password, 10);
+
+        const user = await prisma.user.create({
+            data: {
+                fullName: data.fullName,
+                email: data.email,
+                passwordHash,
+                role: 'APPLICANT',
+            },
+        });
+
+        res.status(201).json({
+            message: 'Applicant created successfully',
             user: {
                 id: user.id,
                 email: user.email,

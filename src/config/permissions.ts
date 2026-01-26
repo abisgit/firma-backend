@@ -1,4 +1,4 @@
-export type Role = 'SUPER_ADMIN' | 'ORG_ADMIN' | 'HR' | 'OFFICER' | 'REVIEWER' | 'USER';
+export type Role = 'SUPER_ADMIN' | 'ORG_ADMIN' | 'HR' | 'OFFICER' | 'REVIEWER' | 'USER' | 'APPLICANT';
 
 export type Permission =
     | 'view_dashboard'
@@ -40,6 +40,9 @@ export const RolePermissions: Record<string, Permission[]> = {
     ],
     USER: [
         'view_dashboard', 'view_letters'
+    ],
+    APPLICANT: [
+        'view_dashboard', 'view_letters', 'create_letters'
     ]
 };
 
