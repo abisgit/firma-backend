@@ -23,6 +23,23 @@ export const getOrganizations = async (req: Request, res: Response, next: NextFu
     }
 };
 
+export const getPublicOrganizations = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const orgs = await prisma.organization.findMany({
+            where: {
+                parentOrganizationId: null
+            },
+            select: {
+                name: true,
+                code: true
+            }
+        });
+        res.json(orgs);
+    } catch (error) {
+        next(error);
+    }
+};
+
 export const getSubOrganizations = async (req: Request, res: Response, next: NextFunction) => {
     try {
         // Fetch only sub-organizations and offices

@@ -4,15 +4,209 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id                   String           @id @default(uuid())
+  name                 String
+  code                 String           @unique
+  type                 OrganizationType
+  isActive             Boolean          @default(true)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  location             String?
+  parentOrganizationId String?
+  phoneNumber          String?
+  maxUsers             Int              @default(100)
+  status               TenantStatus     @default(APPROVED)
+  subscriptionTier     SubscriptionTier @default(STARTER)
+  documents            Document[]
+  receivedLetters      Letter[]         @relation("RecipientOrg")
+  sentLetters          Letter[]         @relation("SenderOrg")
+  ccLetters            LetterCC[]
+  letterCounters       LetterCounter[]
+  templates            LetterTemplate[]
+  receivedMessages     Message[]        @relation("RecipientOrg")
+  parentOrganization   Organization?    @relation("OrgHierarchy", fields: [parentOrganizationId], references: [id])
+  subOrganizations     Organization[]   @relation("OrgHierarchy")
+  users                User[]
+}
+
+model RegistrationRequest {
+  id             String            @id @default(uuid())
+  orgName        String
+  orgType        OrganizationType
+  orgCode        String            @unique
+  contactPerson  String
+  officialEmail  String
+  identitySystem String
+  phone          String?
+  intendedUse    String?
+  status         TenantStatus      @default(PENDING)
+  assignedTier   SubscriptionTier?
+  reviewedById   String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  reviewedBy     User?             @relation("RequestReviewer", fields: [reviewedById], references: [id])
+}
+
+model User {
+  id               String                @id @default(uuid())
+  fullName         String
+  email            String                @unique
+  passwordHash     String
+  role             Role                  @default(OFFICER)
+  organizationId   String?
+  isActive         Boolean               @default(true)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  phoneNumber      String?
+  position         String?
+  createdDocuments Document[]            @relation("DocumentCreator")
+  documents        Document[]            @relation("DocumentOwner")
+  createdLetters   Letter[]              @relation("LetterCreator")
+  receivedLetters  Letter[]              @relation("LetterRecipient")
+  sentMessages     Message[]             @relation("MessageSender")
+  reviewedRequests RegistrationRequest[] @relation("RequestReviewer")
+  stamps           Stamp[]
+  organization     Organization?         @relation(fields: [organizationId], references: [id])
+}
+
+model LetterTemplate {
+  id             String        @id @default(uuid())
+  name           String
+  letterType     LetterType
+  content        String
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  organizationId String?
+  letters        Letter[]
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
+  @@unique([name, organizationId])
+}
+
+model Letter {
+  id                String             @id @default(uuid())
+  referenceNumber   String             @unique
+  subject           String
+  content           String
+  letterType        LetterType
+  status            LetterStatus       @default(DRAFT)
+  classification    Classification     @default(INTERNAL)
+  senderOrgId       String?
+  recipientOrgId    String?
+  recipientUserId   String?
+  createdById       String
+  templateId        String?
+  letterDate        DateTime           @default(now())
+  sentAt            DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  stampId           Int?
+  stampX            Float?
+  stampY            Float?
+  headerImage       String?
+  applicationStatus ApplicationStatus  @default(PENDING)
+  createdBy         User               @relation("LetterCreator", fields: [createdById], references: [id])
+  recipientOrg      Organization?      @relation("RecipientOrg", fields: [recipientOrgId], references: [id])
+  recipientUser     User?              @relation("LetterRecipient", fields: [recipientUserId], references: [id])
+  senderOrg         Organization?      @relation("SenderOrg", fields: [senderOrgId], references: [id])
+  stamp             Stamp?             @relation(fields: [stampId], references: [id])
+  template          LetterTemplate?    @relation(fields: [templateId], references: [id])
+  attachments       LetterAttachment[]
+  ccRecipients      LetterCC[]
+  messages          Message[]
+}
+
+model Message {
+  id             String        @id @default(uuid())
+  content        String
+  letterId       String?
+  senderId       String
+  recipientOrgId String?
+  isRead         Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  letter         Letter?       @relation(fields: [letterId], references: [id])
+  recipientOrg   Organization? @relation("RecipientOrg", fields: [recipientOrgId], references: [id])
+  sender         User          @relation("MessageSender", fields: [senderId], references: [id])
+}
+
+model LetterCC {
+  id             String       @id @default(uuid())
+  letterId       String
+  organizationId String
+  createdAt      DateTime     @default(now())
+  letter         Letter       @relation(fields: [letterId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([letterId, organizationId])
+}
+
+model LetterAttachment {
+  id        String   @id @default(uuid())
+  letterId  String
+  fileName  String
+  fileUrl   String
+  fileSize  Int
+  createdAt DateTime @default(now())
+  letter    Letter   @relation(fields: [letterId], references: [id], onDelete: Cascade)
+}
+
+model LetterCounter {
+  id             String        @id @default(uuid())
+  orgId          String
+  year           Int
+  value          Int
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
+  @@unique([orgId, year])
+}
+
+model Document {
+  id              String         @id @default(uuid())
+  title           String
+  referenceNumber String         @unique
+  description     String?
+  fileName        String
+  fileUrl         String?
+  fileSize        Int
+  ownerId         String?
+  createdById     String
+  organizationId  String?
+  classification  Classification @default(INTERNAL)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  createdBy       User           @relation("DocumentCreator", fields: [createdById], references: [id])
+  organization    Organization?  @relation(fields: [organizationId], references: [id])
+  owner           User?          @relation("DocumentOwner", fields: [ownerId], references: [id])
+}
+
+model Stamp {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  imageUrl  String
+  createdAt DateTime @default(now())
+  letters   Letter[]
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model LandingPageContent {
+  id           String   @id @default("hero")
+  heroTitle    String   @default("IAM for everyone in your organization.")
+  heroDesc     String   @default("The market leader trusted by 1.7 million customers. Manage your official correspondence with the security and efficiency of FIRMA.")
+  featuresJson String   @default("[]")
+  updatedAt    DateTime @updatedAt
 }
 
 enum Role {
   SUPER_ADMIN
   ORG_ADMIN
-  HR
   OFFICER
   REVIEWER
+  HR
   APPLICANT
 }
 
@@ -70,220 +264,4 @@ enum TenantStatus {
   APPROVED
   REJECTED
   PILOT
-}
-
-model Organization {
-  id                   String           @id @default(uuid())
-  name                 String
-  code                 String           @unique
-  type                 OrganizationType
-  parentOrganizationId String?
-  parentOrganization   Organization?    @relation("OrgHierarchy", fields: [parentOrganizationId], references: [id])
-  subOrganizations     Organization[]   @relation("OrgHierarchy")
-  phoneNumber          String?
-  location             String?
-  isActive             Boolean          @default(true)
-  status               TenantStatus     @default(APPROVED) // Existing ones are approved by default
-  subscriptionTier     SubscriptionTier @default(STARTER)
-  maxUsers             Int              @default(100)
-  createdAt            DateTime         @default(now())
-  updatedAt            DateTime         @updatedAt
-
-  users           User[]
-  sentLetters     Letter[]   @relation("SenderOrg")
-  receivedLetters Letter[]   @relation("RecipientOrg")
-  ccLetters       LetterCC[]
-
-  documents Document[]
-
-  letterCounters   LetterCounter[]
-  receivedMessages Message[]       @relation("RecipientOrg")
-  templates        LetterTemplate[]
-}
-
-model RegistrationRequest {
-  id               String           @id @default(uuid())
-  orgName          String
-  orgType          OrganizationType
-  orgCode          String           @unique
-  contactPerson    String
-  officialEmail    String
-  identitySystem   String // LDAP, PKI, None
-  phone            String?
-  intendedUse      String?          @db.Text
-  status           TenantStatus     @default(PENDING)
-  assignedTier     SubscriptionTier?
-  reviewedById     String?
-  reviewedBy       User?            @relation("RequestReviewer", fields: [reviewedById], references: [id])
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-}
-
-model User {
-  id             String        @id @default(uuid())
-  fullName       String
-  email          String        @unique
-  passwordHash   String
-  role           Role          @default(OFFICER)
-  position       String?
-  phoneNumber    String?
-  organizationId String?
-  organization   Organization? @relation(fields: [organizationId], references: [id])
-  isActive       Boolean       @default(true)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-
-  createdLetters  Letter[] @relation("LetterCreator")
-  receivedLetters Letter[] @relation("LetterRecipient")
-  stamps          Stamp[]
-
-  documents        Document[] @relation("DocumentOwner")
-  createdDocuments Document[] @relation("DocumentCreator")
-  sentMessages Message[] @relation("MessageSender")
-  reviewedRequests RegistrationRequest[] @relation("RequestReviewer")
-}
-
-model LetterTemplate {
-  id             String       @id @default(uuid())
-  name           String
-  letterType     LetterType
-  content        String       @db.Text
-  isActive       Boolean      @default(true)
-  organizationId String?
-  organization   Organization? @relation(fields: [organizationId], references: [id])
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  letters Letter[]
-
-  @@unique([name, organizationId])
-}
-
-model Letter {
-  id              String         @id @default(uuid())
-  referenceNumber String         @unique
-  subject         String
-  content         String         @db.Text
-  letterType      LetterType
-  status          LetterStatus   @default(DRAFT)
-  classification  Classification @default(INTERNAL)
-  headerImage     String?
-
-  senderOrgId String?
-  senderOrg   Organization? @relation("SenderOrg", fields: [senderOrgId], references: [id])
-
-  recipientOrgId String?
-  recipientOrg   Organization? @relation("RecipientOrg", fields: [recipientOrgId], references: [id])
-
-  recipientUserId String?
-  recipientUser   User?   @relation("LetterRecipient", fields: [recipientUserId], references: [id])
-
-  createdById String
-  createdBy   User   @relation("LetterCreator", fields: [createdById], references: [id])
-
-  templateId String?
-  template   LetterTemplate? @relation(fields: [templateId], references: [id])
-  stampId    Int?
-  stamp      Stamp?          @relation(fields: [stampId], references: [id])
-  stampX     Float?
-  stampY     Float?
-
-  letterDate DateTime  @default(now())
-  sentAt     DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  ccRecipients LetterCC[]
-  attachments  LetterAttachment[]
-  
-  applicationStatus   ApplicationStatus @default(PENDING)
-  messages            Message[]
-}
-
-model Message {
-  id        String   @id @default(uuid())
-  content   String   @db.Text
-  letterId  String?
-  letter    Letter?  @relation(fields: [letterId], references: [id])
-  senderId  String
-  sender    User     @relation("MessageSender", fields: [senderId], references: [id])
-  
-  recipientOrgId String?
-  recipientOrg   Organization? @relation("RecipientOrg", fields: [recipientOrgId], references: [id])
-  
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-}
-
-model LetterCC {
-  id             String       @id @default(uuid())
-  letterId       String
-  letter         Letter       @relation(fields: [letterId], references: [id], onDelete: Cascade)
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  createdAt      DateTime     @default(now())
-
-  @@unique([letterId, organizationId])
-}
-
-model LetterAttachment {
-  id        String   @id @default(uuid())
-  letterId  String
-  letter    Letter   @relation(fields: [letterId], references: [id], onDelete: Cascade)
-  fileName  String
-  fileUrl   String
-  fileSize  Int
-  createdAt DateTime @default(now())
-}
-
-model LetterCounter {
-  id             String        @id @default(uuid())
-  orgId          String
-  year           Int
-  value          Int
-  organization   Organization? @relation(fields: [organizationId], references: [id])
-  organizationId String?
-
-  @@unique([orgId, year])
-}
-
-model Document {
-  id              String  @id @default(uuid())
-  title           String
-  referenceNumber String  @unique
-  description     String?
-  fileName        String
-  fileUrl         String?
-  fileSize        Int
-
-  ownerId     String?
-  owner       User?   @relation("DocumentOwner", fields: [ownerId], references: [id])
-  createdBy   User    @relation("DocumentCreator", fields: [createdById], references: [id])
-  createdById String
-
-  organizationId String?
-  organization   Organization? @relation(fields: [organizationId], references: [id])
-
-  classification Classification @default(INTERNAL)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-}
-
-model Stamp {
-  id        Int      @id @default(autoincrement())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  imageUrl  String
-  createdAt DateTime @default(now())
-
-  letters Letter[]
-}
-
-model LandingPageContent {
-  id           String   @id @default("hero")
-  heroTitle    String   @default("IAM for everyone in your organization.")
-  heroDesc     String   @default("The market leader trusted by 1.7 million customers. Manage your official correspondence with the security and efficiency of FIRMA.")
-  featuresJson String   @default("[]")
-  updatedAt    DateTime @updatedAt
 }

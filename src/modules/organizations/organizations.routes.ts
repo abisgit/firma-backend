@@ -5,12 +5,16 @@ import {
     getOrganization,
     updateOrganization,
     getSubOrganizations,
-    getOrgStats
+    getOrgStats,
+    getPublicOrganizations
 } from './organizations.controller';
 import { authMiddleware } from '../../middleware/auth.middleware';
 import { rbacMiddleware } from '../../middleware/rbac.middleware';
 
 const router = Router();
+
+// Public route
+router.get('/public', getPublicOrganizations);
 
 // Order is important: specific routes before generic :id
 router.get('/sub-organizations', authMiddleware, getSubOrganizations);

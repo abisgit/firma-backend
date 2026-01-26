@@ -396,7 +396,7 @@ export const createLetter = async (req: AuthRequest, res: Response, next: NextFu
 //     }
 // };
 
-export const getLetterByRef = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const getLetterByRef = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const org = Array.isArray(req.params.org) ? req.params.org[0] : req.params.org;
     const year = Array.isArray(req.params.year) ? req.params.year[0] : req.params.year;

@@ -13,8 +13,9 @@ import {
 
 const router = Router();
 
-// Public route - No auth required
+// Public routes - No auth required
 router.get('/public/:id', getPublicLetter);
+router.get('/verify/:org/:year/:seq', getLetterByRef);
 
 router.use(authMiddleware);
 
