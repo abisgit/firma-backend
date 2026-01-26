@@ -453,20 +453,25 @@ export const updateStampPosition = async (req: AuthRequest, res: Response, next:
 
 export const getLetters = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { organizationId, userId } = req.user!;
+    const { organizationId, userId, role } = req.user!;
 
-    if (!organizationId) {
-      return res.status(400).json({ message: 'User must belong to an organization' });
-    }
+    let where: any = {};
 
-    const letters = await prisma.letter.findMany({
-      where: {
+    if (role !== 'SUPER_ADMIN') {
+      if (!organizationId) {
+        return res.status(400).json({ message: 'User must belong to an organization' });
+      }
+      where = {
         OR: [
           { senderOrgId: organizationId },
           { recipientOrgId: organizationId },
           { recipientUserId: userId }
         ]
-      },
+      };
+    }
+
+    const letters = await prisma.letter.findMany({
+      where,
       include: {
         senderOrg: true,
         recipientOrg: true,
