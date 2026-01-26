@@ -39,7 +39,7 @@ export const getUsers = async (req: AuthRequest, res: Response, next: NextFuncti
 
 export const getUser = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+        const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
         const user = await prisma.user.findUnique({
             where: { id },
             include: { organization: true }
@@ -73,7 +73,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 
 export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+        const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
         const data = userSchema.partial().parse(req.body);
 
         let updateData: any = { ...data };

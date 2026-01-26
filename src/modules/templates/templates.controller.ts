@@ -47,7 +47,7 @@ export const getTemplates = async (req: AuthRequest, res: Response, next: NextFu
 
 export const getTemplateById = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
     const { organizationId, role } = req.user!;
 
     const template = await prisma.letterTemplate.findUnique({
@@ -94,7 +94,7 @@ export const createTemplate = async (req: AuthRequest, res: Response, next: Next
 
 export const updateTemplate = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
 
     const validatedData = templateSchema.partial().parse(req.body);
 
@@ -117,7 +117,7 @@ export const updateTemplate = async (req: Request, res: Response, next: NextFunc
 
 export const deleteTemplate = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
 
     await prisma.letterTemplate.delete({
       where: { id },

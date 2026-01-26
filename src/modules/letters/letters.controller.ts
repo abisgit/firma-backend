@@ -454,7 +454,7 @@ export const getLetterById = async (req: AuthRequest, res: Response, next: NextF
 export const updateStampPosition = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     // const { id } = req.params;
-    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
 
     const { stampId, stampX, stampY } = req.body;
 
@@ -514,7 +514,7 @@ export const getLetters = async (req: AuthRequest, res: Response, next: NextFunc
 
 export const getPublicLetter = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
     const letter = await prisma.letter.findUnique({
       where: { id },
       include: {
@@ -541,7 +541,7 @@ export const getPublicLetter = async (req: Request, res: Response, next: NextFun
 };
 export const updateApplicationStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
     const { status } = req.body; // status is of type ApplicationStatus enum
 
     const letter = await prisma.letter.update({

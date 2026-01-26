@@ -59,7 +59,7 @@ export const getSubOrganizations = async (req: Request, res: Response, next: Nex
 
 export const getOrganization = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+        const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
         const org = await prisma.organization.findFirst({
             where: {
                 OR: [
@@ -101,7 +101,7 @@ export const createOrganization = async (req: Request, res: Response, next: Next
 
 export const updateOrganization = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+        const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
         // make schema partial for updates
         const updateSchema = orgSchema.partial();
         const data = updateSchema.parse(req.body);
@@ -122,7 +122,7 @@ export const updateOrganization = async (req: Request, res: Response, next: Next
 
 export const getOrgStats = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const orgId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+        const orgId = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
         if (!orgId) return res.status(400).json({ message: 'Org ID required' });
 
         const [

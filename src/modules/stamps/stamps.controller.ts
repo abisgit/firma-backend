@@ -102,7 +102,7 @@ export const getStampsByUser = async (req: AuthRequest, res: Response, next: Nex
 export const deleteStamp = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         // const { id } = req.params;
-        const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+        const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
 
         const { userId } = req.user!;
 

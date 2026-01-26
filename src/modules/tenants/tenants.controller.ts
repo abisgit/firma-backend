@@ -80,7 +80,7 @@ export const getRegistrationRequests = async (req: AuthRequest, res: Response, n
 
 export const updateRequestStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const { id } = req.params;
+        const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
         const { status, assignedTier } = req.body;
         const { userId } = req.user!;
 
