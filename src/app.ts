@@ -10,6 +10,7 @@ import templateRoutes from './modules/templates/templates.routes';
 
 import stampRoutes from './modules/stamps/stamps.routes';
 import letterRoutes from './modules/letters/letters.routes';
+import hrRoutes from './modules/hr/hr.routes';
 import userRoutes from './modules/users/users.routes';
 import messageRoutes from './modules/messages/messages.routes';
 import marketingRoutes from './modules/marketing/marketing.routes';
@@ -37,6 +38,7 @@ app.use('/users', userRoutes);
 app.use('/messages', messageRoutes);
 app.use('/marketing', marketingRoutes);
 app.use('/tenants', tenantRoutes);
+app.use('/hr', hrRoutes);
 
 app.use(errorHandler);
 
