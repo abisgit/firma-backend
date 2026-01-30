@@ -1,38 +1,8 @@
-export type Role = 'SUPER_ADMIN' | 'ORG_ADMIN' | 'HR' | 'OFFICER' | 'REVIEWER' | 'USER' | 'APPLICANT' | 'SCHOOL_ADMIN' | 'TEACHER' | 'STUDENT' | 'PARENT';
-
-export type Permission =
-    | 'view_dashboard'
-    | 'view_letters'
-    | 'create_letters'
-    | 'edit_letters'
-    | 'delete_letters'
-    | 'view_templates'
-    | 'create_templates'
-    | 'edit_templates'
-    | 'delete_templates'
-    | 'view_hr'
-    | 'manage_employees'
-    | 'manage_organizations'
-    | 'view_reports'
-    | 'manage_stamps'
-    // Education Permissions
-    | 'manage_school'
-    | 'manage_drivers'
-    | 'manage_students'
-    | 'manage_teachers'
-    | 'manage_classes'
-    | 'manage_schedule'
-    | 'manage_attendance'
-    | 'view_attendance'
-    | 'manage_assignments'
-    | 'grade_assignments'
-    | 'manage_grades'
-    | 'view_grades'
-    | 'view_canteen'
-    | 'manage_timetable'
-    | 'view_timetable';
-
-export const RolePermissions: Record<string, Permission[]> = {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.RolePermissions = void 0;
+exports.hasPermission = hasPermission;
+exports.RolePermissions = {
     SUPER_ADMIN: [
         'view_dashboard', 'view_letters', 'create_letters', 'edit_letters', 'delete_letters',
         'view_templates', 'create_templates', 'edit_templates', 'delete_templates',
@@ -69,8 +39,6 @@ export const RolePermissions: Record<string, Permission[]> = {
         'manage_classes',
         'manage_schedule',
         'manage_attendance',
-        'manage_grades',
-        'manage_timetable',
         'view_reports',
         'manage_employees'
     ],
@@ -80,9 +48,7 @@ export const RolePermissions: Record<string, Permission[]> = {
         'view_attendance',
         'manage_assignments',
         'grade_assignments',
-        'manage_grades',
         'view_grades',
-        'manage_timetable',
         'view_timetable'
     ],
     STUDENT: [
@@ -99,7 +65,6 @@ export const RolePermissions: Record<string, Permission[]> = {
         'view_canteen'
     ]
 };
-
-export function hasPermission(role: string, permission: Permission): boolean {
-    return RolePermissions[role]?.includes(permission) || false;
+function hasPermission(role, permission) {
+    return exports.RolePermissions[role]?.includes(permission) || false;
 }

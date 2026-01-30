@@ -15,6 +15,12 @@ import userRoutes from './modules/users/users.routes';
 import messageRoutes from './modules/messages/messages.routes';
 import marketingRoutes from './modules/marketing/marketing.routes';
 import tenantRoutes from './modules/tenants/tenants.routes';
+import studentRoutes from './modules/students/students.routes';
+import teacherRoutes from './modules/teachers/teachers.routes';
+import classRoutes from './modules/classes/classes.routes';
+import attendanceRoutes from './modules/attendance/attendance.routes';
+import gradeRoutes from './modules/grades/grades.routes';
+import timetableRoutes from './modules/timetable/timetable.routes';
 import path from 'path';
 
 // ... imports
@@ -39,6 +45,12 @@ app.use('/messages', messageRoutes);
 app.use('/marketing', marketingRoutes);
 app.use('/tenants', tenantRoutes);
 app.use('/hr', hrRoutes);
+app.use('/students', studentRoutes);
+app.use('/teachers', teacherRoutes);
+app.use('/classes', classRoutes);
+app.use('/attendance', attendanceRoutes);
+app.use('/grades', gradeRoutes);
+app.use('/timetable', timetableRoutes);
 
 app.use(errorHandler);
 

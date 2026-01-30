@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteStamp = exports.getMyStamps = exports.uploadStamp = exports.upload = void 0;
+exports.deleteStamp = exports.getStampsByUser = exports.getMyStamps = exports.uploadStamp = exports.upload = void 0;
 const db_1 = __importDefault(require("../../config/db"));
 const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
@@ -39,11 +39,18 @@ const uploadStamp = async (req, res, next) => {
         if (!req.file) {
             return res.status(400).json({ message: 'No file uploaded' });
         }
-        const { userId } = req.user;
+        const { role, userId: adminUserId } = req.user;
+        // Only ORG_ADMIN or SUPER_ADMIN can upload stamps
+        if (role !== 'ORG_ADMIN' && role !== 'SUPER_ADMIN') {
+            return res.status(403).json({ message: 'Only organization admins can upload stamps' });
+        }
+        // If userId is provided in body, use it (for uploading on behalf of an employee)
+        // Otherwise, default to the admin's own userId
+        const targetUserId = req.body.userId || adminUserId;
         const fileUrl = `/uploads/${req.file.filename}`; // Relative URL serves from public
         const stamp = await db_1.default.stamp.create({
             data: {
-                userId,
+                userId: targetUserId,
                 imageUrl: fileUrl,
             }
         });
@@ -68,9 +75,30 @@ const getMyStamps = async (req, res, next) => {
     }
 };
 exports.getMyStamps = getMyStamps;
+const getStampsByUser = async (req, res, next) => {
+    try {
+        const userId = req.params.userId;
+        const { role } = req.user;
+        // Only ORG_ADMIN or SUPER_ADMIN can see other users' stamps
+        // Ideally we should also check if the user belongs to the same organization
+        if (role !== 'ORG_ADMIN' && role !== 'SUPER_ADMIN') {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+        const stamps = await db_1.default.stamp.findMany({
+            where: { userId },
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(stamps);
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.getStampsByUser = getStampsByUser;
 const deleteStamp = async (req, res, next) => {
     try {
-        const { id } = req.params;
+        // const { id } = req.params;
+        const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
         const { userId } = req.user;
         const stamp = await db_1.default.stamp.findUnique({
             where: { id: parseInt(id) }

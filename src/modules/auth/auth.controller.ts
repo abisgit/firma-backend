@@ -14,7 +14,7 @@ const registerSchema = z.object({
     fullName: z.string(),
     email: z.string().email(),
     password: z.string().min(6),
-    role: z.enum(['SUPER_ADMIN', 'ORG_ADMIN', 'HR', 'OFFICER', 'REVIEWER', 'APPLICANT']),
+    role: z.enum(['SUPER_ADMIN', 'ORG_ADMIN', 'HR', 'OFFICER', 'REVIEWER', 'APPLICANT', 'SCHOOL_ADMIN', 'TEACHER', 'STUDENT', 'PARENT']),
     organizationId: z.string().optional(),
 });
 
@@ -51,9 +51,11 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
                 email: user.email,
                 role: user.role,
                 organizationId: user.organizationId,
+                industryType: user.organization?.industryType || 'GOVERNMENT',
                 organization: user.organization ? {
                     name: user.organization.name,
-                    code: user.organization.code
+                    code: user.organization.code,
+                    industryType: user.organization.industryType
                 } : null
             },
         });

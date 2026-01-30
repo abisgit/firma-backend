@@ -7,5 +7,6 @@ const router = (0, express_1.Router)();
 router.use(auth_middleware_1.authMiddleware);
 router.post('/', stamps_controller_1.upload.single('image'), stamps_controller_1.uploadStamp);
 router.get('/', stamps_controller_1.getMyStamps);
+router.get('/user/:userId', stamps_controller_1.getStampsByUser);
 router.delete('/:id', stamps_controller_1.deleteStamp);
 exports.default = router;

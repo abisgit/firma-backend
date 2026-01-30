@@ -1,11 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const auth_controller_1 = require("./auth.controller");
+const marketing_controller_1 = require("./marketing.controller");
 const auth_middleware_1 = require("../../middleware/auth.middleware");
 const rbac_middleware_1 = require("../../middleware/rbac.middleware");
 const router = (0, express_1.Router)();
-router.post('/login', auth_controller_1.login);
-router.post('/register', auth_middleware_1.authMiddleware, (0, rbac_middleware_1.rbacMiddleware)(['SUPER_ADMIN']), auth_controller_1.register);
-router.post('/register/public', auth_controller_1.publicRegister);
+router.get('/', marketing_controller_1.getLandingContent);
+router.put('/', auth_middleware_1.authMiddleware, (0, rbac_middleware_1.rbacMiddleware)(['SUPER_ADMIN']), marketing_controller_1.updateLandingContent);
 exports.default = router;
