@@ -14,7 +14,7 @@ const markAttendanceSchema = z.object({
 
 export const getAttendanceByClass = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const { classId } = req.params;
+        const classId = req.params.classId as string;
         const { date } = req.query;
 
         const targetDate = date ? new Date(date as string) : new Date();
@@ -88,7 +88,7 @@ export const markAttendance = async (req: AuthRequest, res: Response, next: Next
 
 export const getStudentAttendance = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const studentId = req.params.studentId || (req.user?.role === 'STUDENT' ? await prisma.student.findUnique({ where: { userId: req.user.userId } }).then((s: any) => s?.id) : null);
+        const studentId = (req.params.studentId as string) || (req.user?.role === 'STUDENT' ? await prisma.student.findUnique({ where: { userId: req.user.userId } }).then((s: any) => s?.id) : null);
 
         if (!studentId) {
             return res.status(400).json({ message: 'Student ID required or user is not a student' });

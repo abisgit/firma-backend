@@ -15,7 +15,7 @@ const addGradeSchema = z.object({
 
 export const getGradesByClass = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const { classId } = req.params;
+        const classId = req.params.classId as string;
         const { termId } = req.query;
 
         const grades = await prisma.grade.findMany({

@@ -15,7 +15,7 @@ const addTimetableSchema = z.object({
 
 export const getTimetableByClass = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const { classId } = req.params;
+        const classId = req.params.classId as string;
         const timetable = await prisma.timetable.findMany({
             where: { classId },
             include: {
