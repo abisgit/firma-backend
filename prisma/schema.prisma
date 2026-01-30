@@ -339,17 +339,17 @@ model Class {
 }
 
 model Subject {
-  id        String           @id @default(uuid())
-  name      String
-  code      String
-  schoolId  String
-  school    School           @relation(fields: [schoolId], references: [id])
-  teachers  TeacherSubject[]
-  classes   ClassSubject[]
-  grades    Grade[]
+  id         String           @id @default(uuid())
+  name       String
+  code       String
+  schoolId   String
+  school     School           @relation(fields: [schoolId], references: [id])
+  teachers   TeacherSubject[]
+  classes    ClassSubject[]
+  grades     Grade[]
   timetables Timetable[]
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 
   @@unique([code, schoolId])
 }
@@ -522,6 +522,7 @@ enum OrganizationType {
   OFFICE
   SOE
   ENTERPRISE
+  EDUCATION
   // Education Types
   SCHOOL
   COLLEGE

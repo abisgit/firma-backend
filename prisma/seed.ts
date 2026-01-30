@@ -538,12 +538,17 @@ async function main() {
     });
 
     // Assign subjects to teacher
-    await prisma.teacherSubject.create({
-        data: {
-            teacherId: teacher.id,
-            subjectId: mathSubject.id,
-        },
+    const existingTS = await prisma.teacherSubject.findFirst({
+        where: { teacherId: teacher.id, subjectId: mathSubject.id }
     });
+    if (!existingTS) {
+        await prisma.teacherSubject.create({
+            data: {
+                teacherId: teacher.id,
+                subjectId: mathSubject.id,
+            },
+        });
+    }
 
     // Assign subjects to class
     await prisma.classSubject.createMany({
@@ -561,7 +566,7 @@ async function main() {
             {
                 classId: grade8A.id,
                 subjectId: mathSubject.id,
-                teacherId: teacherUser.id,
+                teacherId: teacher.id,
                 dayOfWeek: 1, // Monday
                 startTime: '08:00',
                 endTime: '08:45',
@@ -570,7 +575,7 @@ async function main() {
             {
                 classId: grade8A.id,
                 subjectId: engSubject.id,
-                teacherId: teacherUser.id,
+                teacherId: teacher.id,
                 dayOfWeek: 1, // Monday
                 startTime: '09:00',
                 endTime: '09:45',
@@ -579,7 +584,7 @@ async function main() {
             {
                 classId: grade8A.id,
                 subjectId: sciSubject.id,
-                teacherId: teacherUser.id,
+                teacherId: teacher.id,
                 dayOfWeek: 2, // Tuesday
                 startTime: '08:00',
                 endTime: '08:45',
@@ -848,16 +853,14 @@ Sincerely,
     ];
 
     for (const template of templates) {
-        await prisma.letterTemplate.upsert({
-            where: {
-                name_organizationId: {
-                    name: template.name,
-                    organizationId: null as unknown as string,
-                }
-            },
-            update: {},
-            create: template,
+        const existing = await prisma.letterTemplate.findFirst({
+            where: { name: template.name, organizationId: null }
         });
+        if (!existing) {
+            await prisma.letterTemplate.create({
+                data: template,
+            });
+        }
     }
 
     console.log('✅ Created letter templates');
