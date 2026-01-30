@@ -7,8 +7,9 @@ const createClassSchema = z.object({
     name: z.string().min(1),
     grade: z.string().min(1),
     section: z.string().optional(),
-    academicYear: z.string().min(4), // e.g. "2025" or "2025-2026"
-    capacity: z.number().int().positive().optional()
+    academicYear: z.string().min(4),
+    capacity: z.number().int().positive().optional(),
+    subjectIds: z.array(z.string()).optional(),
 });
 
 export const getClasses = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -18,15 +19,22 @@ export const getClasses = async (req: AuthRequest, res: Response, next: NextFunc
             return res.status(400).json({ message: 'User does not belong to an organization' });
         }
 
-        const school = await prisma.school.findUnique({
+        let school = await (prisma as any).school.findUnique({
             where: { organizationId }
         });
 
         if (!school) {
-            return res.status(404).json({ message: 'School profile not found for this organization' });
+            const org: any = await prisma.organization.findUnique({ where: { id: organizationId } });
+            if (org?.industryType === 'EDUCATION') {
+                school = await (prisma as any).school.create({
+                    data: { organizationId }
+                });
+            } else {
+                return res.status(404).json({ message: 'School profile not found' });
+            }
         }
 
-        const classes = await prisma.class.findMany({
+        const classes = await (prisma as any).class.findMany({
             where: { schoolId: school.id },
             include: {
                 teachers: {
@@ -36,11 +44,16 @@ export const getClasses = async (req: AuthRequest, res: Response, next: NextFunc
                         }
                     }
                 },
+                subjects: {
+                    include: {
+                        subject: true
+                    }
+                },
                 _count: {
                     select: { students: true }
                 }
             },
-            orderBy: { name: 'asc' }
+            orderBy: [{ grade: 'asc' }, { name: 'asc' }]
         });
 
         res.json(classes);
@@ -56,28 +69,48 @@ export const createClass = async (req: AuthRequest, res: Response, next: NextFun
             return res.status(400).json({ message: 'User does not belong to an organization' });
         }
 
-        const { name, grade, section, academicYear, capacity } = createClassSchema.parse(req.body);
+        const { name, grade, section, academicYear, capacity, subjectIds } = createClassSchema.parse(req.body);
 
-        const school = await prisma.school.findUnique({
+        let school = await (prisma as any).school.findUnique({
             where: { organizationId }
         });
 
         if (!school) {
-            return res.status(404).json({ message: 'School profile not found for this organization' });
+            const org: any = await prisma.organization.findUnique({ where: { id: organizationId } });
+            if (org?.industryType === 'EDUCATION') {
+                school = await (prisma as any).school.create({
+                    data: { organizationId }
+                });
+            } else {
+                return res.status(404).json({ message: 'School profile not found' });
+            }
         }
 
-        const newClass = await prisma.class.create({
-            data: {
-                name,
-                grade,
-                section,
-                academicYear,
-                capacity: capacity || 40,
-                schoolId: school.id
+        const result = await prisma.$transaction(async (tx) => {
+            const newClass = await (tx as any).class.create({
+                data: {
+                    name,
+                    grade,
+                    section,
+                    academicYear,
+                    capacity: capacity || 40,
+                    schoolId: school.id
+                }
+            });
+
+            if (subjectIds && subjectIds.length > 0) {
+                await (tx as any).classSubject.createMany({
+                    data: subjectIds.map(subjectId => ({
+                        classId: newClass.id,
+                        subjectId
+                    }))
+                });
             }
+
+            return newClass;
         });
 
-        res.status(201).json(newClass);
+        res.status(201).json(result);
     } catch (error) {
         next(error);
     }

@@ -11,7 +11,6 @@ const createStudentSchema = z.object({
     lastName: z.string().min(2),
     email: z.string().email(),
     password: z.string().min(6),
-    admissionNumber: z.string(),
     dateOfBirth: z.string().transform((str) => new Date(str)),
     gender: z.string().optional(),
     classId: z.string().optional(),
@@ -24,7 +23,7 @@ export const getStudents = async (req: AuthRequest, res: Response, next: NextFun
             return res.status(400).json({ message: 'User does not belong to an organization' });
         }
 
-        const students = await prisma.student.findMany({
+        const students = await (prisma as any).student.findMany({
             where: {
                 user: {
                     organizationId
@@ -67,7 +66,7 @@ export const getStudents = async (req: AuthRequest, res: Response, next: NextFun
 export const getStudentById = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
-        const student = await prisma.student.findUnique({
+        const student = await (prisma as any).student.findUnique({
             where: { id },
             include: {
                 user: true,
@@ -110,7 +109,7 @@ export const createStudent = async (req: AuthRequest, res: Response, next: NextF
             return res.status(400).json({ message: 'User does not belong to an organization' });
         }
 
-        const { firstName, lastName, email, password, admissionNumber, dateOfBirth, classId } = createStudentSchema.parse(req.body);
+        const { firstName, lastName, email, password, dateOfBirth, classId } = createStudentSchema.parse(req.body);
 
         // Check if user exists
         const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -118,11 +117,25 @@ export const createStudent = async (req: AuthRequest, res: Response, next: NextF
             return res.status(400).json({ message: 'User with this email already exists' });
         }
 
-        // Check if admission number exists
-        const existingStudent = await prisma.student.findUnique({ where: { admissionNumber } });
-        if (existingStudent) {
-            return res.status(400).json({ message: 'Student with this admission number already exists' });
+        const org = await prisma.organization.findUnique({
+            where: { id: organizationId }
+        });
+
+        if (!org) {
+            return res.status(404).json({ message: 'Organization not found' });
         }
+
+        const year = new Date().getFullYear();
+        const studentCount = await (prisma as any).student.count({
+            where: {
+                user: {
+                    organizationId
+                }
+            }
+        });
+
+        const studentIndex = (studentCount + 1).toString().padStart(3, '0');
+        const admissionNumber = `${org.code}${year}${studentIndex}`;
 
         const passwordHash = await bcrypt.hash(password, 10);
         const fullName = `${firstName} ${lastName}`;
@@ -139,7 +152,7 @@ export const createStudent = async (req: AuthRequest, res: Response, next: NextF
                 }
             });
 
-            const student = await tx.student.create({
+            const student = await (tx as any).student.create({
                 data: {
                     userId: user.id,
                     admissionNumber,

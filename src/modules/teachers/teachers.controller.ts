@@ -13,6 +13,7 @@ const createTeacherSchema = z.object({
     password: z.string().min(6),
     employeeNumber: z.string().min(1),
     phoneNumber: z.string().optional(),
+    subjectIds: z.array(z.string()).optional(),
 });
 
 export const getTeachers = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -22,7 +23,7 @@ export const getTeachers = async (req: AuthRequest, res: Response, next: NextFun
             return res.status(400).json({ message: 'User does not belong to an organization' });
         }
 
-        const teachers = await prisma.teacher.findMany({
+        const teachers = await (prisma as any).teacher.findMany({
             where: {
                 user: {
                     organizationId
@@ -64,7 +65,7 @@ export const createTeacher = async (req: AuthRequest, res: Response, next: NextF
             return res.status(400).json({ message: 'User does not belong to an organization' });
         }
 
-        const { firstName, lastName, email, password, employeeNumber, phoneNumber } = createTeacherSchema.parse(req.body);
+        const { firstName, lastName, email, password, employeeNumber, phoneNumber, subjectIds } = createTeacherSchema.parse(req.body);
 
         // Check if user exists
         const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -73,7 +74,7 @@ export const createTeacher = async (req: AuthRequest, res: Response, next: NextF
         }
 
         // Check if employee number exists
-        const existingTeacher = await prisma.teacher.findUnique({ where: { employeeNumber } });
+        const existingTeacher = await (prisma as any).teacher.findUnique({ where: { employeeNumber } });
         if (existingTeacher) {
             return res.status(400).json({ message: 'Teacher with this employee number already exists' });
         }
@@ -94,12 +95,21 @@ export const createTeacher = async (req: AuthRequest, res: Response, next: NextF
                 }
             });
 
-            const teacher = await tx.teacher.create({
+            const teacher = await (tx as any).teacher.create({
                 data: {
                     userId: user.id,
                     employeeNumber
                 }
             });
+
+            if (subjectIds && subjectIds.length > 0) {
+                await (tx as any).teacherSubject.createMany({
+                    data: subjectIds.map(subjectId => ({
+                        teacherId: teacher.id,
+                        subjectId
+                    }))
+                });
+            }
 
             return { user, teacher };
         });

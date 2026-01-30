@@ -21,6 +21,7 @@ import classRoutes from './modules/classes/classes.routes';
 import attendanceRoutes from './modules/attendance/attendance.routes';
 import gradeRoutes from './modules/grades/grades.routes';
 import timetableRoutes from './modules/timetable/timetable.routes';
+import subjectRoutes from './modules/subjects/subjects.routes';
 import path from 'path';
 
 // ... imports
@@ -31,6 +32,12 @@ app.use(helmet({ crossOriginResourcePolicy: false })); // Allow loading images
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use((req, res, next) => {
+    const log = `${new Date().toISOString()} - ${req.method} ${req.url}\n`;
+    require('fs').appendFileSync('request.log', log);
+    next();
+});
+
 app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
 
 // Main Routes
@@ -51,6 +58,7 @@ app.use('/classes', classRoutes);
 app.use('/attendance', attendanceRoutes);
 app.use('/grades', gradeRoutes);
 app.use('/timetable', timetableRoutes);
+app.use('/subjects', subjectRoutes);
 
 app.use(errorHandler);
 

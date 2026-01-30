@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import prisma from '../../config/db';
 import { AuthRequest } from '../../middleware/auth.middleware';
 import bcrypt from 'bcrypt';
-import { OrganizationType, IndustryType, Role, TenantStatus } from '@prisma/client';
+import { OrganizationType, Role, TenantStatus } from '@prisma/client';
 
 export const submitRegistrationRequest = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -42,7 +42,7 @@ export const submitRegistrationRequest = async (req: Request, res: Response, nex
             });
         }
 
-        const request = await prisma.registrationRequest.create({
+        const request = await (prisma as any).registrationRequest.create({
             data: {
                 orgName,
                 orgType,
@@ -122,16 +122,25 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response, next:
                     throw new Error(`Organization with code ${updated.orgCode} already exists.`);
                 }
 
-                const org = await tx.organization.create({
+                const org = await (tx as any).organization.create({
                     data: {
-                        name: updated.orgName,
-                        code: updated.orgCode,
-                        type: updated.orgType,
-                        industryType: updated.industryType,
+                        name: (updated as any).orgName,
+                        code: (updated as any).orgCode,
+                        type: (updated as any).orgType,
+                        industryType: (updated as any).industryType,
                         subscriptionTier: assignedTier || 'STARTER',
                         status: 'APPROVED'
                     }
                 });
+
+                // Create School profile if it's an educational institution
+                if ((updated as any).industryType === 'EDUCATION') {
+                    await (tx as any).school.create({
+                        data: {
+                            organizationId: org.id
+                        }
+                    });
+                }
 
                 // Check if user already exists
                 const existingUser = await tx.user.findUnique({
@@ -150,7 +159,7 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response, next:
                         fullName: updated.contactPerson,
                         email: updated.officialEmail,
                         passwordHash,
-                        role: updated.industryType === 'EDUCATION' ? Role.SCHOOL_ADMIN : Role.ORG_ADMIN,
+                        role: ((updated as any).industryType === 'EDUCATION') ? ('SCHOOL_ADMIN' as any) : ('ORG_ADMIN' as any),
                         organizationId: org.id
                     }
                 });
