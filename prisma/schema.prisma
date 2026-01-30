@@ -62,6 +62,8 @@ model User {
   updatedAt        DateTime              @updatedAt
   phoneNumber      String?
   position         String?
+  signatureUrl     String?
+  profileImageUrl  String?
   leaves           LeaveRequest[]        @relation("EmployeeLeaves")
   approvedLeaves   LeaveRequest[]        @relation("ApprovedLeaves")
   reviews          PerformanceReview[]   @relation("EmployeeReviews")
