@@ -43,11 +43,11 @@ export const getSubjects = async (req: AuthRequest, res: Response, next: NextFun
         } else if (req.user?.role === 'PARENT') {
             const parent = await prisma.parent.findUnique({
                 where: { userId: req.user.userId },
-                include: { students: { include: { student: { include: { class: true } } } } }
+                include: { children: { include: { student: { include: { class: true } } } } }
             });
 
-            if (parent?.students) {
-                const grades = [...new Set(parent.students.map((s: any) => s.student?.class?.grade).filter(Boolean))];
+            if (parent?.children) {
+                const grades = [...new Set(parent.children.map((s: any) => s.student?.class?.grade).filter(Boolean))];
                 if (grades.length > 0) {
                     whereClause.grade = { in: grades };
                 }

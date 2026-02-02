@@ -55,7 +55,7 @@ export const deleteEvent = async (req: AuthRequest, res: Response, next: NextFun
     try {
         const { id } = req.params;
         await prisma.event.delete({
-            where: { id }
+            where: { id: id as string }
         });
         res.json({ message: 'Event deleted' });
     } catch (error) {
