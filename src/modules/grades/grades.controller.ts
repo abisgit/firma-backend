@@ -47,14 +47,57 @@ export const addGrade = async (req: AuthRequest, res: Response, next: NextFuncti
             return res.status(401).json({ message: 'Unauthorized' });
         }
 
+        // Validate termId or find a default one if it's the hardcoded dummy 'TERM-1'
+        let finalTermId = data.termId;
+        if (finalTermId === 'TERM-1' || !finalTermId) {
+            const organizationId = req.user?.organizationId;
+            const school = await (prisma as any).school.findUnique({ where: { organizationId } });
+            if (school) {
+                const term = await prisma.term.findFirst({
+                    where: { academicYear: { schoolId: school.id } },
+                    orderBy: { startDate: 'desc' }
+                });
+                if (term) finalTermId = term.id;
+            } else {
+                // Fallback: find any term if school not linked
+                const anyTerm = await prisma.term.findFirst({ orderBy: { startDate: 'desc' } });
+                if (anyTerm) finalTermId = anyTerm.id;
+            }
+        }
+
+        if (finalTermId === 'TERM-1') {
+            return res.status(400).json({ message: 'Invalid Term ID. No semester records found in system.' });
+        }
+
         const grade = await prisma.grade.create({
             data: {
                 ...data,
+                termId: finalTermId,
                 gradedById
             }
         });
 
         res.status(201).json(grade);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateGrade = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const { score, remarks, gradeType } = req.body;
+
+        const grade = await prisma.grade.update({
+            where: { id: id as string },
+            data: {
+                ...(score !== undefined && { score: Number(score) }),
+                ...(remarks !== undefined && { remarks }),
+                ...(gradeType !== undefined && { gradeType })
+            }
+        });
+
+        res.json(grade);
     } catch (error) {
         next(error);
     }

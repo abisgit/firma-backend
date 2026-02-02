@@ -6,8 +6,6 @@ datasource db {
   provider = "postgresql"
 }
 
-// ===== CORE MODELS =====
-
 model Organization {
   id                   String           @id @default(uuid())
   name                 String
@@ -24,6 +22,7 @@ model Organization {
   status               TenantStatus     @default(APPROVED)
   subscriptionTier     SubscriptionTier @default(STARTER)
   documents            Document[]
+  events               Event[]
   receivedLetters      Letter[]         @relation("RecipientOrg")
   sentLetters          Letter[]         @relation("SenderOrg")
   ccLetters            LetterCC[]
@@ -32,9 +31,8 @@ model Organization {
   receivedMessages     Message[]        @relation("RecipientOrg")
   parentOrganization   Organization?    @relation("OrgHierarchy", fields: [parentOrganizationId], references: [id])
   subOrganizations     Organization[]   @relation("OrgHierarchy")
-  users                User[]
   school               School?
-  events               Event[]
+  users                User[]
 }
 
 model RegistrationRequest {
@@ -70,22 +68,22 @@ model User {
   position         String?
   signatureUrl     String?
   profileImageUrl  String?
-  leaves           LeaveRequest[]        @relation("EmployeeLeaves")
-  approvedLeaves   LeaveRequest[]        @relation("ApprovedLeaves")
-  reviews          PerformanceReview[]   @relation("EmployeeReviews")
-  givenReviews     PerformanceReview[]   @relation("ReviewerReviews")
   createdDocuments Document[]            @relation("DocumentCreator")
   documents        Document[]            @relation("DocumentOwner")
+  approvedLeaves   LeaveRequest[]        @relation("ApprovedLeaves")
+  leaves           LeaveRequest[]        @relation("EmployeeLeaves")
   createdLetters   Letter[]              @relation("LetterCreator")
   receivedLetters  Letter[]              @relation("LetterRecipient")
   sentMessages     Message[]             @relation("MessageSender")
+  receivedMessages Message[]             @relation("MessageRecipient")
+  parent           Parent?
+  reviews          PerformanceReview[]   @relation("EmployeeReviews")
+  givenReviews     PerformanceReview[]   @relation("ReviewerReviews")
   reviewedRequests RegistrationRequest[] @relation("RequestReviewer")
   stamps           Stamp[]
-  organization     Organization?         @relation(fields: [organizationId], references: [id])
-  // Education relations
   student          Student?
   teacher          Teacher?
-  parent           Parent?
+  organization     Organization?         @relation(fields: [organizationId], references: [id])
 }
 
 model LetterTemplate {
@@ -141,11 +139,13 @@ model Message {
   content        String
   letterId       String?
   senderId       String
+  recipientId    String?
   recipientOrgId String?
   isRead         Boolean       @default(false)
   createdAt      DateTime      @default(now())
   letter         Letter?       @relation(fields: [letterId], references: [id])
   recipientOrg   Organization? @relation("RecipientOrg", fields: [recipientOrgId], references: [id])
+  recipient      User?         @relation("MessageRecipient", fields: [recipientId], references: [id])
   sender         User          @relation("MessageSender", fields: [senderId], references: [id])
 }
 
@@ -201,16 +201,6 @@ model Document {
   owner           User?          @relation("DocumentOwner", fields: [ownerId], references: [id])
 }
 
-enum DocumentType {
-  PERSONAL
-  TRAINING
-  NATIONAL_ID
-  CONTRACT
-  REVIEW
-  PAYROLL
-  OTHER
-}
-
 model Stamp {
   id        Int      @id @default(autoincrement())
   userId    String
@@ -228,8 +218,6 @@ model LandingPageContent {
   updatedAt    DateTime @updatedAt
 }
 
-// ===== HR MODELS =====
-
 model LeaveRequest {
   id           String      @id @default(uuid())
   employeeId   String
@@ -241,8 +229,8 @@ model LeaveRequest {
   approvedById String?
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
-  employee     User        @relation("EmployeeLeaves", fields: [employeeId], references: [id])
   approvedBy   User?       @relation("ApprovedLeaves", fields: [approvedById], references: [id])
+  employee     User        @relation("EmployeeLeaves", fields: [employeeId], references: [id])
 }
 
 model PerformanceReview {
@@ -258,56 +246,54 @@ model PerformanceReview {
   reviewer   User     @relation("ReviewerReviews", fields: [reviewerId], references: [id])
 }
 
-// ===== EDUCATION MODELS =====
-
 model School {
   id              String         @id @default(uuid())
   organizationId  String         @unique
-  organization    Organization   @relation(fields: [organizationId], references: [id])
   motto           String?
   principalId     String?
   establishedYear Int?
-  classes         Class[]
-  subjects        Subject[]
-  academicYears   AcademicYear[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+  academicYears   AcademicYear[]
+  classes         Class[]
+  organization    Organization   @relation(fields: [organizationId], references: [id])
+  subjects        Subject[]
 }
 
 model Student {
   id              String            @id @default(uuid())
   userId          String            @unique
-  user            User              @relation(fields: [userId], references: [id])
   admissionNumber String            @unique
   classId         String?
-  class           Class?            @relation(fields: [classId], references: [id])
   dateOfBirth     DateTime?
-  guardians       StudentGuardian[]
-  grades          Grade[]
-  attendances     Attendance[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
+  attendances     Attendance[]
+  grades          Grade[]
+  class           Class?            @relation(fields: [classId], references: [id])
+  user            User              @relation(fields: [userId], references: [id])
+  guardians       StudentGuardian[]
 }
 
 model Teacher {
   id             String           @id @default(uuid())
   userId         String           @unique
-  user           User             @relation(fields: [userId], references: [id])
   employeeNumber String           @unique
-  subjects       TeacherSubject[]
-  classes        ClassTeacher[]
-  timetables     Timetable[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
+  classes        ClassTeacher[]
+  user           User             @relation(fields: [userId], references: [id])
+  subjects       TeacherSubject[]
+  timetables     Timetable[]
 }
 
 model Parent {
   id        String            @id @default(uuid())
   userId    String            @unique
-  user      User              @relation(fields: [userId], references: [id])
-  children  StudentGuardian[]
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
+  user      User              @relation(fields: [userId], references: [id])
+  children  StudentGuardian[]
 }
 
 model StudentGuardian {
@@ -316,8 +302,8 @@ model StudentGuardian {
   parentId     String
   relationship GuardianType @default(PARENT)
   isPrimary    Boolean      @default(false)
-  student      Student      @relation(fields: [studentId], references: [id])
   parent       Parent       @relation(fields: [parentId], references: [id])
+  student      Student      @relation(fields: [studentId], references: [id])
 
   @@unique([studentId, parentId])
 }
@@ -330,29 +316,29 @@ model Class {
   schoolId     String
   academicYear String
   capacity     Int            @default(40)
-  school       School         @relation(fields: [schoolId], references: [id])
-  students     Student[]
-  teachers     ClassTeacher[]
-  subjects     ClassSubject[]
-  timetables   Timetable[]
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
+  school       School         @relation(fields: [schoolId], references: [id])
+  subjects     ClassSubject[]
+  teachers     ClassTeacher[]
+  students     Student[]
+  timetables   Timetable[]
 }
 
 model Subject {
-  id         String           @id @default(uuid())
-  name       String
-  code       String
-  schoolId   String
-  school     School           @relation(fields: [schoolId], references: [id])
-  teachers   TeacherSubject[]
-  classes    ClassSubject[]
-  grades     Grade[]
-  timetables Timetable[]
-  grade      String?
+  id          String           @id @default(uuid())
+  name        String
+  code        String
+  schoolId    String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  grade       String?
   attendances Attendance[]
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
+  classes     ClassSubject[]
+  grades      Grade[]
+  school      School           @relation(fields: [schoolId], references: [id])
+  teachers    TeacherSubject[]
+  timetables  Timetable[]
 
   @@unique([code, schoolId, grade])
 }
@@ -365,9 +351,9 @@ model Event {
   endDate        DateTime?
   location       String?
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
 }
 
 model Grade {
@@ -380,24 +366,24 @@ model Grade {
   gradeType  GradeType @default(EXAM)
   remarks    String?
   gradedById String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
   student    Student   @relation(fields: [studentId], references: [id])
   subject    Subject   @relation(fields: [subjectId], references: [id])
   term       Term      @relation(fields: [termId], references: [id])
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
 }
 
 model Attendance {
   id         String           @id @default(uuid())
   studentId  String
-  subjectId  String?
   date       DateTime
   status     AttendanceStatus @default(PRESENT)
   remarks    String?
   markedById String
+  createdAt  DateTime         @default(now())
+  subjectId  String?
   student    Student          @relation(fields: [studentId], references: [id])
   subject    Subject?         @relation(fields: [subjectId], references: [id])
-  createdAt  DateTime         @default(now())
 }
 
 model AcademicYear {
@@ -407,9 +393,9 @@ model AcademicYear {
   endDate   DateTime
   isCurrent Boolean  @default(false)
   schoolId  String
+  createdAt DateTime @default(now())
   school    School   @relation(fields: [schoolId], references: [id])
   terms     Term[]
-  createdAt DateTime @default(now())
 }
 
 model Term {
@@ -418,9 +404,9 @@ model Term {
   startDate      DateTime
   endDate        DateTime
   academicYearId String
-  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
-  grades         Grade[]
   createdAt      DateTime     @default(now())
+  grades         Grade[]
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
 }
 
 model Timetable {
@@ -432,13 +418,12 @@ model Timetable {
   startTime String
   endTime   String
   room      String?
+  createdAt DateTime @default(now())
   class     Class    @relation(fields: [classId], references: [id])
   subject   Subject  @relation(fields: [subjectId], references: [id])
   teacher   Teacher  @relation(fields: [teacherId], references: [id])
-  createdAt DateTime @default(now())
 }
 
-// Junction tables for Education
 model ClassTeacher {
   id        String  @id @default(uuid())
   classId   String
@@ -454,8 +439,8 @@ model TeacherSubject {
   id        String  @id @default(uuid())
   teacherId String
   subjectId String
-  teacher   Teacher @relation(fields: [teacherId], references: [id])
   subject   Subject @relation(fields: [subjectId], references: [id])
+  teacher   Teacher @relation(fields: [teacherId], references: [id])
 
   @@unique([teacherId, subjectId])
 }
@@ -470,9 +455,16 @@ model ClassSubject {
   @@unique([classId, subjectId])
 }
 
-// ===== ENUMS =====
+enum DocumentType {
+  PERSONAL
+  TRAINING
+  NATIONAL_ID
+  CONTRACT
+  REVIEW
+  PAYROLL
+  OTHER
+}
 
-// Industry Types
 enum IndustryType {
   GOVERNMENT
   EDUCATION
@@ -481,17 +473,13 @@ enum IndustryType {
   LEGAL
 }
 
-// Core Roles (includes both Government and Education)
 enum Role {
-  // System Admin
   SUPER_ADMIN
-  // Government Roles
   ORG_ADMIN
   OFFICER
   REVIEWER
   HR
   APPLICANT
-  // Education Roles
   SCHOOL_ADMIN
   TEACHER
   STUDENT
@@ -530,7 +518,6 @@ enum Classification {
 }
 
 enum OrganizationType {
-  // Government Types
   MINISTRY
   AGENCY
   REGION
@@ -539,7 +526,6 @@ enum OrganizationType {
   SOE
   ENTERPRISE
   EDUCATION
-  // Education Types
   SCHOOL
   COLLEGE
   UNIVERSITY
@@ -576,7 +562,6 @@ enum LeaveStatus {
   CANCELLED
 }
 
-// Education-specific Enums
 enum GradeType {
   EXAM
   TEST

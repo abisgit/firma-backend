@@ -7,7 +7,7 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.get('/', checkPermission('manage_teachers'), getTeachers);
+router.get('/', checkPermission('view_teachers'), getTeachers);
 router.post('/', checkPermission('manage_teachers'), createTeacher);
 
 export default router;

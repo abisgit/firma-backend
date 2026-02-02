@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 const messageSchema = z.object({
     content: z.string(),
+    recipientId: z.string().optional(),
     letterId: z.string().optional(),
     recipientOrgId: z.string().optional(),
 });
@@ -14,11 +15,12 @@ export const sendMessage = async (req: AuthRequest, res: Response, next: NextFun
         const data = messageSchema.parse(req.body);
         const { userId } = req.user!;
 
-        const message = await prisma.message.create({
+        const message = await (prisma.message as any).create({
             data: {
                 content: data.content,
                 letterId: data.letterId,
                 senderId: userId,
+                recipientId: data.recipientId,
                 recipientOrgId: data.recipientOrgId,
             }
         });
@@ -50,30 +52,61 @@ export const getMessagesByLetter = async (req: AuthRequest, res: Response, next:
 
 export const getMyMessages = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const { userId, organizationId, role } = req.user!;
+        const { userId } = req.user!;
 
-        let where: any = {};
-        if (role === 'APPLICANT') {
-            where = { senderId: userId };
-        } else if (organizationId) {
-            where = { recipientOrgId: organizationId };
-        }
+        // Get unique conversation partners (people I've sent to or received from)
+        const sentMessages = await (prisma.message as any).findMany({
+            where: { senderId: userId, recipientId: { not: null } },
+            include: { recipient: { select: { id: true, fullName: true, role: true } } },
+            distinct: ['recipientId']
+        });
 
-        const messages = await prisma.message.findMany({
-            where,
-            include: {
-                letter: {
-                    select: { referenceNumber: true, subject: true }
-                },
-                sender: {
-                    select: { fullName: true }
-                }
+        const receivedMessages = await (prisma.message as any).findMany({
+            where: { recipientId: userId },
+            include: { sender: { select: { id: true, fullName: true, role: true } } },
+            distinct: ['senderId']
+        });
+
+        // Combine and find unique users
+        const partnersMap = new Map();
+        (sentMessages as any[]).forEach(m => {
+            if (m.recipient) partnersMap.set(m.recipient.id, m.recipient);
+        });
+        (receivedMessages as any[]).forEach(m => {
+            if (m.sender) partnersMap.set(m.sender.id, m.sender);
+        });
+
+        const chats = Array.from(partnersMap.values()).map(user => ({
+            id: user.id,
+            name: user.fullName,
+            role: user.role,
+            lastMessage: 'Open to view conversation'
+        }));
+
+        res.json(chats);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getChatHistory = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const { userId } = req.user!;
+        const { partnerId } = req.params;
+
+        const messages = await (prisma.message as any).findMany({
+            where: {
+                OR: [
+                    { senderId: userId, recipientId: partnerId as string },
+                    { senderId: partnerId as string, recipientId: userId }
+                ]
             },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'asc' }
         });
 
         res.json(messages);
     } catch (error) {
+        console.error('[getChatHistory] Error:', error);
         next(error);
     }
 };

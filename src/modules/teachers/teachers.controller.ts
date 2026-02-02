@@ -19,6 +19,7 @@ const createTeacherSchema = z.object({
 export const getTeachers = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const organizationId = req.user?.organizationId;
+        console.log(`[getTeachers] User: ${req.user?.userId}, Role: ${req.user?.role}, Org: ${organizationId}`);
         if (!organizationId) {
             return res.status(400).json({ message: 'User does not belong to an organization' });
         }
@@ -52,8 +53,10 @@ export const getTeachers = async (req: AuthRequest, res: Response, next: NextFun
             }
         });
 
+        console.log(`[getTeachers] Found ${teachers.length} teachers for org ${organizationId}`);
         res.json(teachers);
     } catch (error) {
+        console.error('[getTeachers] Error:', error);
         next(error);
     }
 };

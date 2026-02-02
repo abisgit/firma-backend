@@ -24,8 +24,38 @@ export const getSubjects = async (req: AuthRequest, res: Response, next: NextFun
             return res.status(404).json({ message: 'School profile not found' });
         }
 
+        let whereClause: any = { schoolId: school.id };
+
+        // Role-based filtering
+        if (req.user?.role === 'TEACHER') {
+            const teacher = await prisma.teacher.findUnique({ where: { userId: req.user.userId } });
+            if (teacher) {
+                whereClause.teachers = { some: { teacherId: teacher.id } };
+            }
+        } else if (req.user?.role === 'STUDENT') {
+            const student = await prisma.student.findUnique({
+                where: { userId: req.user.userId },
+                include: { class: true }
+            });
+            if (student?.class?.grade) {
+                whereClause.grade = student.class.grade;
+            }
+        } else if (req.user?.role === 'PARENT') {
+            const parent = await prisma.parent.findUnique({
+                where: { userId: req.user.userId },
+                include: { students: { include: { student: { include: { class: true } } } } }
+            });
+
+            if (parent?.students) {
+                const grades = [...new Set(parent.students.map((s: any) => s.student?.class?.grade).filter(Boolean))];
+                if (grades.length > 0) {
+                    whereClause.grade = { in: grades };
+                }
+            }
+        }
+
         const subjects = await (prisma as any).subject.findMany({
-            where: { schoolId: school.id },
+            where: whereClause,
             include: {
                 teachers: {
                     include: {

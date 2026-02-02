@@ -25,7 +25,7 @@ export const getClasses = async (req: AuthRequest, res: Response, next: NextFunc
 
         if (!school) {
             const org: any = await prisma.organization.findUnique({ where: { id: organizationId } });
-            if (org?.industryType === 'EDUCATION') {
+            if (org?.industryType === 'EDUCATION' || req.user?.role === 'SCHOOL_ADMIN' || req.user?.role === 'TEACHER') {
                 school = await (prisma as any).school.create({
                     data: { organizationId }
                 });
@@ -77,7 +77,7 @@ export const createClass = async (req: AuthRequest, res: Response, next: NextFun
 
         if (!school) {
             const org: any = await prisma.organization.findUnique({ where: { id: organizationId } });
-            if (org?.industryType === 'EDUCATION') {
+            if (org?.industryType === 'EDUCATION' || req.user?.role === 'SCHOOL_ADMIN' || req.user?.role === 'TEACHER') {
                 school = await (prisma as any).school.create({
                     data: { organizationId }
                 });

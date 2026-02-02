@@ -102,7 +102,6 @@ export const RolePermissions: Record<string, Permission[]> = {
         'manage_grades',
         'view_grades',
         'edit_grades',
-        'manage_timetable',
         'view_timetable',
         'view_events'
     ],
