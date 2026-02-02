@@ -65,7 +65,7 @@ const userSchema = z.object({
     fullName: z.string(),
     email: z.string().email(),
     password: z.string().min(6),
-    role: z.enum(['SUPER_ADMIN', 'ORG_ADMIN', 'OFFICER', 'REVIEWER', 'HR']),
+    role: z.enum(['SUPER_ADMIN', 'ORG_ADMIN', 'OFFICER', 'REVIEWER', 'HR', 'SCHOOL_ADMIN', 'TEACHER', 'STUDENT', 'PARENT']),
     position: z.string().optional(),
     phoneNumber: z.string().optional(),
     organizationId: z.string().optional(),

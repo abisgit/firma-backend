@@ -65,11 +65,10 @@ export const getStudents = async (req: AuthRequest, res: Response, next: NextFun
 
 export const getStudentById = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const { id } = req.params;
+        const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
         const student = await prisma.student.findUnique({
             where: { id },
             include: {
-                user: true,
                 class: true,
                 guardians: {
                     include: {
@@ -185,6 +184,75 @@ export const createStudent = async (req: AuthRequest, res: Response, next: NextF
         });
 
         res.status(201).json(result);
+    } catch (error) {
+        next(error);
+    }
+};
+const updateStudentSchema = z.object({
+    firstName: z.string().min(2).optional(),
+    lastName: z.string().min(2).optional(),
+    email: z.string().email().optional(),
+    dateOfBirth: z.string().transform((str) => new Date(str)).optional(),
+    classId: z.string().optional(),
+    isActive: z.boolean().optional(),
+});
+
+export const updateStudent = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
+        const data = updateStudentSchema.parse(req.body);
+
+        const student = await prisma.student.findUnique({
+            where: { id },
+            include: { user: true }
+        }) as any;
+
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        const result = await prisma.$transaction(async (tx) => {
+            const updateData: any = {};
+            if (data.firstName || data.lastName) {
+                const names = student.user.fullName.split(' ');
+                const firstName = data.firstName || names[0];
+                const lastName = data.lastName || names.slice(1).join(' ');
+                updateData.fullName = `${firstName} ${lastName}`;
+            }
+            if (data.email) updateData.email = data.email;
+            if (data.isActive !== undefined) updateData.isActive = data.isActive;
+
+            if (Object.keys(updateData).length > 0) {
+                await tx.user.update({
+                    where: { id: student.userId },
+                    data: updateData
+                });
+            }
+
+            const updatedStudent = await tx.student.update({
+                where: { id },
+                data: {
+                    dateOfBirth: data.dateOfBirth,
+                    classId: data.classId || undefined
+                },
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            fullName: true,
+                            email: true,
+                            phoneNumber: true,
+                            isActive: true
+                        }
+                    },
+                    class: true
+                }
+            });
+
+            return updatedStudent;
+        });
+
+        res.json(result);
     } catch (error) {
         next(error);
     }
