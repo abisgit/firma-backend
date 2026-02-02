@@ -23,7 +23,7 @@ export const getStudents = async (req: AuthRequest, res: Response, next: NextFun
             return res.status(400).json({ message: 'User does not belong to an organization' });
         }
 
-        const students = await (prisma as any).student.findMany({
+        const students = await prisma.student.findMany({
             where: {
                 user: {
                     organizationId
@@ -66,7 +66,7 @@ export const getStudents = async (req: AuthRequest, res: Response, next: NextFun
 export const getStudentById = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
-        const student = await (prisma as any).student.findUnique({
+        const student = await prisma.student.findUnique({
             where: { id },
             include: {
                 user: true,
@@ -80,7 +80,7 @@ export const getStudentById = async (req: AuthRequest, res: Response, next: Next
                         }
                     }
                 },
-                attendance: {
+                attendances: {
                     take: 5,
                     orderBy: { date: 'desc' }
                 },
@@ -126,16 +126,36 @@ export const createStudent = async (req: AuthRequest, res: Response, next: NextF
         }
 
         const year = new Date().getFullYear();
-        const studentCount = await (prisma as any).student.count({
+
+        // Find all admission numbers for this org and year to find the next available index
+        const studentsInOrg = await prisma.student.findMany({
             where: {
                 user: {
                     organizationId
+                },
+                admissionNumber: {
+                    contains: `${org.code}/${year}/`
                 }
+            },
+            select: {
+                admissionNumber: true
             }
         });
 
-        const studentIndex = (studentCount + 1).toString().padStart(3, '0');
-        const admissionNumber = `${org.code}${year}${studentIndex}`;
+        let nextIndex = 1;
+        if (studentsInOrg.length > 0) {
+            const indices = studentsInOrg.map(s => {
+                const parts = s.admissionNumber.split('/');
+                return parseInt(parts[parts.length - 1], 10);
+            }).filter(idx => !isNaN(idx));
+
+            if (indices.length > 0) {
+                nextIndex = Math.max(...indices) + 1;
+            }
+        }
+
+        const studentIndex = nextIndex.toString().padStart(4, '0');
+        const admissionNumber = `${org.code}/${year}/${studentIndex}`;
 
         const passwordHash = await bcrypt.hash(password, 10);
         const fullName = `${firstName} ${lastName}`;
@@ -146,13 +166,13 @@ export const createStudent = async (req: AuthRequest, res: Response, next: NextF
                     fullName,
                     email,
                     passwordHash,
-                    role: 'STUDENT' as any,
+                    role: 'STUDENT',
                     organizationId,
                     isActive: true
                 }
             });
 
-            const student = await (tx as any).student.create({
+            const student = await tx.student.create({
                 data: {
                     userId: user.id,
                     admissionNumber,

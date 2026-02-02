@@ -8,7 +8,7 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get('/class/:classId', checkPermission('view_attendance'), getAttendanceByClass);
-router.post('/mark', checkPermission('manage_attendance'), markAttendance);
+router.post('/mark', checkPermission('mark_attendance'), markAttendance);
 router.get('/student', getStudentAttendance);
 router.get('/student/:studentId', getStudentAttendance);
 

@@ -34,6 +34,7 @@ model Organization {
   subOrganizations     Organization[]   @relation("OrgHierarchy")
   users                User[]
   school               School?
+  events               Event[]
 }
 
 model RegistrationRequest {
@@ -348,10 +349,25 @@ model Subject {
   classes    ClassSubject[]
   grades     Grade[]
   timetables Timetable[]
+  grade      String?
+  attendances Attendance[]
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
 
-  @@unique([code, schoolId])
+  @@unique([code, schoolId, grade])
+}
+
+model Event {
+  id             String       @id @default(uuid())
+  title          String
+  description    String?
+  startDate      DateTime
+  endDate        DateTime?
+  location       String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }
 
 model Grade {
@@ -374,14 +390,14 @@ model Grade {
 model Attendance {
   id         String           @id @default(uuid())
   studentId  String
+  subjectId  String?
   date       DateTime
   status     AttendanceStatus @default(PRESENT)
   remarks    String?
   markedById String
   student    Student          @relation(fields: [studentId], references: [id])
+  subject    Subject?         @relation(fields: [subjectId], references: [id])
   createdAt  DateTime         @default(now())
-
-  @@unique([studentId, date])
 }
 
 model AcademicYear {

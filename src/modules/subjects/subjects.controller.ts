@@ -6,6 +6,7 @@ import { AuthRequest } from '../../middleware/auth.middleware';
 const createSubjectSchema = z.object({
     name: z.string().min(1),
     code: z.string().min(1),
+    grade: z.string().optional(),
 });
 
 export const getSubjects = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -26,11 +27,22 @@ export const getSubjects = async (req: AuthRequest, res: Response, next: NextFun
         const subjects = await (prisma as any).subject.findMany({
             where: { schoolId: school.id },
             include: {
+                teachers: {
+                    include: {
+                        teacher: {
+                            include: {
+                                user: {
+                                    select: { fullName: true }
+                                }
+                            }
+                        }
+                    }
+                },
                 _count: {
                     select: { teachers: true, classes: true }
                 }
             },
-            orderBy: { name: 'asc' }
+            orderBy: [{ grade: 'asc' }, { name: 'asc' }]
         });
 
         res.json(subjects);
@@ -46,7 +58,7 @@ export const createSubject = async (req: AuthRequest, res: Response, next: NextF
             return res.status(400).json({ message: 'User does not belong to an organization' });
         }
 
-        const { name, code } = createSubjectSchema.parse(req.body);
+        const { name, code, grade } = createSubjectSchema.parse(req.body);
 
         const school = await (prisma as any).school.findUnique({
             where: { organizationId }
@@ -60,6 +72,7 @@ export const createSubject = async (req: AuthRequest, res: Response, next: NextF
             data: {
                 name,
                 code: code.toUpperCase(),
+                grade,
                 schoolId: school.id
             }
         });

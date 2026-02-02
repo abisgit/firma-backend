@@ -7,8 +7,8 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.get('/', checkPermission('manage_students'), getStudents);
-router.get('/:id', checkPermission('manage_students'), getStudentById);
+router.get('/', checkPermission('view_students'), getStudents);
+router.get('/:id', checkPermission('view_students'), getStudentById);
 router.post('/', checkPermission('manage_students'), createStudent);
 
 export default router;

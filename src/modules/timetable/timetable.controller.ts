@@ -7,7 +7,7 @@ const addTimetableSchema = z.object({
     classId: z.string(),
     subjectId: z.string(),
     teacherId: z.string(),
-    dayOfWeek: z.number().min(0).max(6), // 0=Sunday, 1=Monday...
+    dayOfWeek: z.number().min(1).max(7), // 1=Monday... 7=Sunday
     startTime: z.string(), // "HH:mm"
     endTime: z.string(),
     room: z.string().optional()

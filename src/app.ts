@@ -22,6 +22,8 @@ import attendanceRoutes from './modules/attendance/attendance.routes';
 import gradeRoutes from './modules/grades/grades.routes';
 import timetableRoutes from './modules/timetable/timetable.routes';
 import subjectRoutes from './modules/subjects/subjects.routes';
+import eventRoutes from './modules/events/events.routes';
+import parentRoutes from './modules/parents/parents.routes';
 import path from 'path';
 
 // ... imports
@@ -59,6 +61,8 @@ app.use('/attendance', attendanceRoutes);
 app.use('/grades', gradeRoutes);
 app.use('/timetable', timetableRoutes);
 app.use('/subjects', subjectRoutes);
+app.use('/events', eventRoutes);
+app.use('/parents', parentRoutes);
 
 app.use(errorHandler);
 

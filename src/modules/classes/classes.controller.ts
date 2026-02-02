@@ -115,3 +115,54 @@ export const createClass = async (req: AuthRequest, res: Response, next: NextFun
         next(error);
     }
 };
+export const getClassById = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const id = req.params.id;
+        const organizationId = req.user?.organizationId;
+
+        const classDetail = await (prisma as any).class.findUnique({
+            where: { id },
+            include: {
+                teachers: {
+                    include: {
+                        teacher: {
+                            include: { user: { select: { fullName: true, email: true } } }
+                        }
+                    }
+                },
+                subjects: {
+                    include: {
+                        subject: true
+                    }
+                },
+                students: {
+                    include: {
+                        user: {
+                            select: {
+                                fullName: true,
+                                email: true,
+                                phoneNumber: true,
+                                isActive: true
+                            }
+                        }
+                    }
+                },
+                _count: {
+                    select: { students: true }
+                }
+            }
+        });
+
+        if (!classDetail) return res.status(404).json({ message: 'Class not found' });
+
+        // Security check: ensure the class belongs to the user's organization school
+        const school = await (prisma as any).school.findUnique({ where: { organizationId } });
+        if (!school || classDetail.schoolId !== school.id) {
+            return res.status(403).json({ message: 'Forbidden' });
+        }
+
+        res.json(classDetail);
+    } catch (error) {
+        next(error);
+    }
+};

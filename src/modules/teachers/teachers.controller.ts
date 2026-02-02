@@ -23,7 +23,7 @@ export const getTeachers = async (req: AuthRequest, res: Response, next: NextFun
             return res.status(400).json({ message: 'User does not belong to an organization' });
         }
 
-        const teachers = await (prisma as any).teacher.findMany({
+        const teachers = await prisma.teacher.findMany({
             where: {
                 user: {
                     organizationId
@@ -74,7 +74,7 @@ export const createTeacher = async (req: AuthRequest, res: Response, next: NextF
         }
 
         // Check if employee number exists
-        const existingTeacher = await (prisma as any).teacher.findUnique({ where: { employeeNumber } });
+        const existingTeacher = await prisma.teacher.findUnique({ where: { employeeNumber } });
         if (existingTeacher) {
             return res.status(400).json({ message: 'Teacher with this employee number already exists' });
         }
@@ -88,14 +88,14 @@ export const createTeacher = async (req: AuthRequest, res: Response, next: NextF
                     fullName,
                     email,
                     passwordHash,
-                    role: 'TEACHER' as any,
+                    role: 'TEACHER',
                     organizationId,
                     phoneNumber,
                     isActive: true
                 }
             });
 
-            const teacher = await (tx as any).teacher.create({
+            const teacher = await tx.teacher.create({
                 data: {
                     userId: user.id,
                     employeeNumber
@@ -103,8 +103,8 @@ export const createTeacher = async (req: AuthRequest, res: Response, next: NextF
             });
 
             if (subjectIds && subjectIds.length > 0) {
-                await (tx as any).teacherSubject.createMany({
-                    data: subjectIds.map(subjectId => ({
+                await tx.teacherSubject.createMany({
+                    data: subjectIds.map((subjectId: string) => ({
                         teacherId: teacher.id,
                         subjectId
                     }))
@@ -116,6 +116,10 @@ export const createTeacher = async (req: AuthRequest, res: Response, next: NextF
 
         res.status(201).json(result);
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            console.error('[createTeacher] Validation Error:', error.issues);
+            return res.status(400).json({ message: 'Validation failed', errors: error.issues });
+        }
         next(error);
     }
 };
