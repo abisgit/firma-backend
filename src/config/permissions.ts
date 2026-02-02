@@ -52,7 +52,17 @@ export const RolePermissions: Record<string, Permission[]> = {
         'view_dashboard', 'view_letters', 'create_letters', 'edit_letters',
         'view_templates', 'create_templates', 'edit_templates',
         'view_hr', 'manage_employees', 'view_reports', 'manage_stamps',
-        'manage_events', 'view_events'
+        'manage_events', 'view_events',
+        // Fallback Education Permissions
+        'manage_school',
+        'manage_students', 'view_students',
+        'manage_teachers', 'view_teachers',
+        'manage_classes', 'view_classes',
+        'manage_subjects', 'view_subjects',
+        'manage_schedule',
+        'manage_attendance', 'view_attendance', 'mark_attendance',
+        'manage_grades', 'view_grades', 'edit_grades',
+        'manage_timetable', 'view_timetable'
     ],
     HR: [
         'view_dashboard', 'view_hr', 'manage_employees', 'view_reports'
