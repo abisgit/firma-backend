@@ -63,6 +63,34 @@ export const getStudents = async (req: AuthRequest, res: Response, next: NextFun
     }
 };
 
+export const getStudentProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.user?.userId;
+        const student = await prisma.student.findUnique({
+            where: { userId },
+            include: {
+                class: true,
+                user: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        email: true,
+                        phoneNumber: true
+                    }
+                }
+            }
+        });
+
+        if (!student) {
+            return res.status(404).json({ message: 'Student profile not found' });
+        }
+
+        res.json(student);
+    } catch (error) {
+        next(error);
+    }
+};
+
 export const getStudentById = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
