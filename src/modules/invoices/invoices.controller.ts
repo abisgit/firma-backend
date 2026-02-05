@@ -1,0 +1,145 @@
+import { Request, Response, NextFunction } from 'express';
+import prisma from '../../config/db';
+import { z } from 'zod';
+import { SubscriptionTier, InvoiceStatus } from '@prisma/client';
+
+const PRICING: Record<SubscriptionTier, number> = {
+    STARTER: 99,
+    CONSORTIUM: 299,
+    NATIONAL: 999,
+    ENTERPRISE_LITE: 499
+};
+
+const submitPaymentSchema = z.object({
+    paymentMethod: z.string(),
+    transactionNumber: z.string(),
+    tier: z.nativeEnum(SubscriptionTier).optional(),
+});
+
+export const getInvoice = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { orgId } = req.params;
+
+        // Find latest unpaid or pending invoice
+        let invoice = await prisma.invoice.findFirst({
+            where: {
+                organizationId: orgId,
+                status: { in: [InvoiceStatus.UNPAID, InvoiceStatus.PENDING] }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        // If no active invoice, create a default one based on current tier
+        if (!invoice) {
+            const org = await prisma.organization.findUnique({ where: { id: orgId } });
+            if (!org) return res.status(404).json({ message: 'Organization not found' });
+
+            invoice = await prisma.invoice.create({
+                data: {
+                    invoiceNumber: `INV-${Date.now()}-${org.code}`,
+                    organizationId: orgId,
+                    amount: PRICING[org.subscriptionTier],
+                    tier: org.subscriptionTier,
+                    status: InvoiceStatus.UNPAID
+                }
+            });
+        }
+
+        res.json(invoice);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateInvoiceTier = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const { tier } = req.body;
+
+        if (!PRICING[tier as SubscriptionTier]) {
+            return res.status(400).json({ message: 'Invalid tier' });
+        }
+
+        const invoice = await prisma.invoice.update({
+            where: { id },
+            data: {
+                tier: tier as SubscriptionTier,
+                amount: PRICING[tier as SubscriptionTier]
+            }
+        });
+
+        res.json(invoice);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const submitPayment = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const data = submitPaymentSchema.parse(req.body);
+
+        const invoice = await prisma.invoice.update({
+            where: { id },
+            data: {
+                paymentMethod: data.paymentMethod,
+                transactionNumber: data.transactionNumber,
+                status: InvoiceStatus.PENDING,
+                tier: data.tier || undefined,
+                amount: data.tier ? PRICING[data.tier] : undefined
+            }
+        });
+
+        res.json(invoice);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getAllInvoices = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const invoices = await prisma.invoice.findMany({
+            include: { organization: true },
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(invoices);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const approveInvoice = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+
+        const invoice = await prisma.invoice.findUnique({
+            where: { id },
+            include: { organization: true }
+        });
+
+        if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+
+        // Update invoice status
+        const updatedInvoice = await prisma.invoice.update({
+            where: { id },
+            data: {
+                status: InvoiceStatus.PAID,
+                paidAt: new Date()
+            }
+        });
+
+        // Update organization status and tier
+        await prisma.organization.update({
+            where: { id: invoice.organizationId },
+            data: {
+                isActive: true,
+                subscriptionTier: invoice.tier,
+                expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // +30 days example
+            }
+        });
+
+        res.json(updatedInvoice);
+    } catch (error) {
+        next(error);
+    }
+};

@@ -25,6 +25,8 @@ import subjectRoutes from './modules/subjects/subjects.routes';
 import eventRoutes from './modules/events/events.routes';
 import parentRoutes from './modules/parents/parents.routes';
 import academicRoutes from './modules/academic/academic.routes';
+import invoiceRoutes from './modules/invoices/invoices.routes';
+import bankRoutes from './modules/banks/banks.routes';
 import path from 'path';
 
 // ... imports
@@ -65,6 +67,8 @@ app.use('/subjects', subjectRoutes);
 app.use('/events', eventRoutes);
 app.use('/parents', parentRoutes);
 app.use('/academic', academicRoutes);
+app.use('/invoices', invoiceRoutes);
+app.use('/banks', bankRoutes);
 
 app.use(errorHandler);
 

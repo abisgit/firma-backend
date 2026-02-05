@@ -34,6 +34,7 @@ model Organization {
   subOrganizations     Organization[]   @relation("OrgHierarchy")
   school               School?
   users                User[]
+  invoices             Invoice[]
 }
 
 model RegistrationRequest {
@@ -587,4 +588,35 @@ enum GuardianType {
   PARENT
   GUARDIAN
   OTHER
+}
+enum InvoiceStatus {
+  UNPAID
+  PENDING
+  PAID
+  CANCELLED
+}
+
+model Invoice {
+  id                String           @id @default(uuid())
+  invoiceNumber     String           @unique
+  organizationId    String
+  organization      Organization     @relation(fields: [organizationId], references: [id])
+  amount            Float
+  status            InvoiceStatus    @default(UNPAID)
+  tier              SubscriptionTier
+  paymentMethod     String?
+  transactionNumber String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  paidAt            DateTime?
+}
+
+model Bank {
+  id            String   @id @default(uuid())
+  name          String
+  accountNumber String
+  logoUrl       String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
