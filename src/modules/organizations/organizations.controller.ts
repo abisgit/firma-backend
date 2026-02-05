@@ -21,9 +21,21 @@ const orgSchema = z.object({
 export const getOrganizations = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const orgs = await prisma.organization.findMany({
-            include: { subOrganizations: true } // Include children for hierarchy if needed
+            include: {
+                subOrganizations: true,
+                invoices: {
+                    where: { status: { in: ['UNPAID', 'PENDING'] } },
+                    take: 1
+                }
+            }
         });
-        res.json(orgs);
+
+        const processedOrgs = orgs.map(org => ({
+            ...org,
+            isActive: org.invoices.length > 0 ? false : org.isActive
+        }));
+
+        res.json(processedOrgs);
     } catch (error) {
         next(error);
     }
@@ -73,12 +85,30 @@ export const getOrganization = async (req: Request, res: Response, next: NextFun
                     { code: id }
                 ]
             },
-            include: { subOrganizations: true }
+            include: {
+                subOrganizations: true,
+                invoices: {
+                    where: { status: { in: ['UNPAID', 'PENDING'] } },
+                    orderBy: { createdAt: 'desc' },
+                    take: 1
+                }
+            }
         });
+
         if (!org) {
             return res.status(404).json({ message: 'Organization not found' });
         }
-        res.json(org);
+
+        // If there is an unpaid or pending invoice, the tenant should not be considered "Active"
+        // even if the isActive flag in DB is true (until admin approves)
+        const hasUnpaidInvoice = org.invoices.length > 0;
+        const finalIsActive = hasUnpaidInvoice ? false : org.isActive;
+
+        res.json({
+            ...org,
+            isActive: finalIsActive,
+            hasUnpaidInvoice
+        });
     } catch (error) {
         next(error);
     }
