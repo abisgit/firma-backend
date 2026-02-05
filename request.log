@@ -5704,3 +5704,5 @@
 2026-02-05T10:49:35.674Z - GET /subjects
 2026-02-05T10:49:36.361Z - GET /teachers
 2026-02-05T10:49:36.390Z - GET /timetable/class/0a9505ce-7900-4e0b-ac9f-8988c1000c6e
+2026-02-05T12:36:07.642Z - GET /marketing
+2026-02-05T12:36:09.503Z - GET /organizations/public
