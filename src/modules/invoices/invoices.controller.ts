@@ -18,7 +18,7 @@ const submitPaymentSchema = z.object({
 
 export const getInvoice = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { orgId } = req.params;
+        const orgId = req.params.orgId as string;
 
         // Find latest unpaid or pending invoice
         let invoice = await prisma.invoice.findFirst({
@@ -53,7 +53,7 @@ export const getInvoice = async (req: Request, res: Response, next: NextFunction
 
 export const updateInvoiceTier = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const { tier } = req.body;
 
         if (!PRICING[tier as SubscriptionTier]) {
@@ -76,7 +76,7 @@ export const updateInvoiceTier = async (req: Request, res: Response, next: NextF
 
 export const submitPayment = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const data = submitPaymentSchema.parse(req.body);
 
         const invoice = await prisma.invoice.update({
@@ -110,7 +110,7 @@ export const getAllInvoices = async (req: Request, res: Response, next: NextFunc
 
 export const approveInvoice = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         const invoice = await prisma.invoice.findUnique({
             where: { id },

@@ -46,7 +46,7 @@ export const createBank = async (req: Request, res: Response, next: NextFunction
 
 export const updateBank = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const data = bankSchema.partial().parse(req.body);
         const bank = await prisma.bank.update({
             where: { id },
@@ -60,7 +60,7 @@ export const updateBank = async (req: Request, res: Response, next: NextFunction
 
 export const deleteBank = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
         await prisma.bank.delete({
             where: { id }
         });
