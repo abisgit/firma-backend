@@ -21,6 +21,7 @@ model Organization {
   maxUsers             Int              @default(100)
   status               TenantStatus     @default(APPROVED)
   subscriptionTier     SubscriptionTier @default(STARTER)
+  expirationDate       DateTime?
   documents            Document[]
   events               Event[]
   receivedLetters      Letter[]         @relation("RecipientOrg")
@@ -471,6 +472,8 @@ enum IndustryType {
   HEALTHCARE
   FINANCE
   LEGAL
+  PRIVATE
+  OTHER
 }
 
 enum Role {
