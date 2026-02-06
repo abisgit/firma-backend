@@ -30,10 +30,17 @@ export const getOrganizations = async (req: Request, res: Response, next: NextFu
             }
         });
 
-        const processedOrgs = orgs.map(org => ({
-            ...org,
-            isActive: org.invoices.length > 0 ? false : org.isActive
-        }));
+        const processedOrgs = orgs.map(org => {
+            const isExpired = org.expirationDate && new Date(org.expirationDate) < new Date();
+            const hasPendingPayment = org.invoices.some(inv => inv.status === 'UNPAID' || inv.status === 'PENDING');
+
+            return {
+                ...org,
+                isActive: (isExpired || hasPendingPayment) ? false : org.isActive,
+                hasUnpaidInvoice: hasPendingPayment,
+                isExpired
+            };
+        });
 
         res.json(processedOrgs);
     } catch (error) {
@@ -99,15 +106,18 @@ export const getOrganization = async (req: Request, res: Response, next: NextFun
             return res.status(404).json({ message: 'Organization not found' });
         }
 
-        // If there is an unpaid or pending invoice, the tenant should not be considered "Active"
-        // even if the isActive flag in DB is true (until admin approves)
-        const hasUnpaidInvoice = org.invoices.length > 0;
-        const finalIsActive = hasUnpaidInvoice ? false : org.isActive;
+        // If there is an unpaid or pending invoice, or if the subscription is expired, the tenant should not be considered "Active"
+        const isExpired = org.expirationDate && new Date(org.expirationDate) < new Date();
+        const hasPendingPayment = org.invoices.some(inv => inv.status === 'UNPAID' || inv.status === 'PENDING');
+
+        // Final status: Active only if DB says so AND no outstanding payment AND not expired
+        const finalIsActive = (isExpired || hasPendingPayment) ? false : org.isActive;
 
         res.json({
             ...org,
             isActive: finalIsActive,
-            hasUnpaidInvoice
+            hasUnpaidInvoice: hasPendingPayment,
+            isExpired
         });
     } catch (error) {
         next(error);

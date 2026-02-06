@@ -20,7 +20,7 @@ export const getInvoice = async (req: Request, res: Response, next: NextFunction
     try {
         const orgId = req.params.orgId as string;
 
-        // Find latest unpaid or pending invoice
+        // 1. Always look for an existing outstanding collection first (Unpaid or Pending)
         let invoice = await prisma.invoice.findFirst({
             where: {
                 organizationId: orgId,
@@ -29,22 +29,37 @@ export const getInvoice = async (req: Request, res: Response, next: NextFunction
             orderBy: { createdAt: 'desc' }
         });
 
-        // If no active invoice, create a default one based on current tier
-        if (!invoice) {
-            const org = await prisma.organization.findUnique({ where: { id: orgId } });
-            if (!org) return res.status(404).json({ message: 'Organization not found' });
+        if (invoice) return res.json(invoice);
 
+        // 2. No outstanding invoice fround. Check institutional status.
+        const org = await prisma.organization.findUnique({ where: { id: orgId } });
+        if (!org) return res.status(404).json({ message: 'Organization not found' });
+
+        const isCurrentlyActive = org.isActive && (!org.expirationDate || new Date(org.expirationDate) > new Date());
+
+        // 3. If institutional status is Inactive or Expired, create a NEW renewal bill (UNPAID)
+        // This ensures they see the payment form instead of a historical "PAID" record.
+        if (!isCurrentlyActive) {
             invoice = await prisma.invoice.create({
                 data: {
                     invoiceNumber: `INV-${Date.now()}-${org.code}`,
                     organizationId: orgId,
-                    amount: PRICING[org.subscriptionTier],
+                    amount: PRICING[org.subscriptionTier] || 99,
                     tier: org.subscriptionTier,
                     status: InvoiceStatus.UNPAID
                 }
             });
+            return res.json(invoice);
         }
 
+        // 4. If they are active and healthy, show their latest PAID bill so they see "Verified"
+        invoice = await prisma.invoice.findFirst({
+            where: { organizationId: orgId, status: InvoiceStatus.PAID },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        // 5. Extreme fallback: Tenant is active in DB but somehow has zero invoice history.
+        // We return null so the UI can show a "No historical billing" state or handle it gracefully.
         res.json(invoice);
     } catch (error) {
         next(error);
