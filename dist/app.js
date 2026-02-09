@@ -19,6 +19,17 @@ const messages_routes_1 = __importDefault(require("./modules/messages/messages.r
 const marketing_routes_1 = __importDefault(require("./modules/marketing/marketing.routes"));
 const tenants_routes_1 = __importDefault(require("./modules/tenants/tenants.routes"));
 const students_routes_1 = __importDefault(require("./modules/students/students.routes"));
+const teachers_routes_1 = __importDefault(require("./modules/teachers/teachers.routes"));
+const classes_routes_1 = __importDefault(require("./modules/classes/classes.routes"));
+const attendance_routes_1 = __importDefault(require("./modules/attendance/attendance.routes"));
+const grades_routes_1 = __importDefault(require("./modules/grades/grades.routes"));
+const timetable_routes_1 = __importDefault(require("./modules/timetable/timetable.routes"));
+const subjects_routes_1 = __importDefault(require("./modules/subjects/subjects.routes"));
+const events_routes_1 = __importDefault(require("./modules/events/events.routes"));
+const parents_routes_1 = __importDefault(require("./modules/parents/parents.routes"));
+const academic_routes_1 = __importDefault(require("./modules/academic/academic.routes"));
+const invoices_routes_1 = __importDefault(require("./modules/invoices/invoices.routes"));
+const banks_routes_1 = __importDefault(require("./modules/banks/banks.routes"));
 const path_1 = __importDefault(require("path"));
 // ... imports
 const app = (0, express_1.default)();
@@ -26,6 +37,11 @@ app.use((0, helmet_1.default)({ crossOriginResourcePolicy: false })); // Allow l
 app.use((0, cors_1.default)());
 app.use(express_1.default.json({ limit: '10mb' }));
 app.use(express_1.default.urlencoded({ limit: '10mb', extended: true }));
+app.use((req, res, next) => {
+    const log = `${new Date().toISOString()} - ${req.method} ${req.url}\n`;
+    require('fs').appendFileSync('request.log', log);
+    next();
+});
 app.use('/uploads', express_1.default.static(path_1.default.join(process.cwd(), 'public', 'uploads')));
 // Main Routes
 app.use('/auth', auth_routes_1.default);
@@ -40,5 +56,16 @@ app.use('/marketing', marketing_routes_1.default);
 app.use('/tenants', tenants_routes_1.default);
 app.use('/hr', hr_routes_1.default);
 app.use('/students', students_routes_1.default);
+app.use('/teachers', teachers_routes_1.default);
+app.use('/classes', classes_routes_1.default);
+app.use('/attendance', attendance_routes_1.default);
+app.use('/grades', grades_routes_1.default);
+app.use('/timetable', timetable_routes_1.default);
+app.use('/subjects', subjects_routes_1.default);
+app.use('/events', events_routes_1.default);
+app.use('/parents', parents_routes_1.default);
+app.use('/academic', academic_routes_1.default);
+app.use('/invoices', invoices_routes_1.default);
+app.use('/banks', banks_routes_1.default);
 app.use(error_middleware_1.errorHandler);
 exports.default = app;

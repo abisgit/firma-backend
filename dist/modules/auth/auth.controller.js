@@ -30,7 +30,12 @@ const login = async (req, res, next) => {
         const { email, password } = loginSchema.parse(req.body);
         const user = await db_1.default.user.findUnique({
             where: { email },
-            include: { organization: true }
+            include: {
+                organization: true,
+                student: true,
+                teacher: true,
+                parent: true
+            }
         });
         if (!user || !(await bcrypt_1.default.compare(password, user.passwordHash))) {
             return res.status(401).json({ message: 'Invalid credentials' });
@@ -49,7 +54,10 @@ const login = async (req, res, next) => {
                     name: user.organization.name,
                     code: user.organization.code,
                     industryType: user.organization.industryType
-                } : null
+                } : null,
+                student: user.student,
+                teacher: user.teacher,
+                parent: user.parent
             },
         });
     }

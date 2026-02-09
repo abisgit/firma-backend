@@ -66,7 +66,7 @@ const userSchema = zod_1.z.object({
     fullName: zod_1.z.string(),
     email: zod_1.z.string().email(),
     password: zod_1.z.string().min(6),
-    role: zod_1.z.enum(['SUPER_ADMIN', 'ORG_ADMIN', 'OFFICER', 'REVIEWER', 'HR']),
+    role: zod_1.z.enum(['SUPER_ADMIN', 'ORG_ADMIN', 'OFFICER', 'REVIEWER', 'HR', 'SCHOOL_ADMIN', 'TEACHER', 'STUDENT', 'PARENT']),
     position: zod_1.z.string().optional(),
     phoneNumber: zod_1.z.string().optional(),
     organizationId: zod_1.z.string().optional(),

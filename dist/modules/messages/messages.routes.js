@@ -8,4 +8,5 @@ router.use(auth_middleware_1.authMiddleware);
 router.get('/', messages_controller_1.getMyMessages);
 router.post('/', messages_controller_1.sendMessage);
 router.get('/letter/:id', messages_controller_1.getMessagesByLetter);
+router.get('/history/:partnerId', messages_controller_1.getChatHistory);
 exports.default = router;

@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const timetable_controller_1 = require("./timetable.controller");
+const auth_middleware_1 = require("../../middleware/auth.middleware");
+const permission_middleware_1 = require("../../middleware/permission.middleware");
+const router = (0, express_1.Router)();
+router.use(auth_middleware_1.authMiddleware);
+router.get('/class/:classId', (0, permission_middleware_1.checkPermission)('view_timetable'), timetable_controller_1.getTimetableByClass);
+router.post('/', (0, permission_middleware_1.checkPermission)('manage_timetable'), timetable_controller_1.addTimetableEntry);
+exports.default = router;

@@ -43,7 +43,8 @@ const submitRegistrationRequest = async (req, res, next) => {
                 officialEmail,
                 identitySystem,
                 phone,
-                intendedUse
+                intendedUse,
+                industryType: orgType === 'EDUCATION' ? 'EDUCATION' : 'GOVERNMENT'
             }
         });
         res.status(201).json(request);
@@ -77,51 +78,87 @@ const updateRequestStatus = async (req, res, next) => {
         const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
         const { status, assignedTier } = req.body;
         const { userId } = req.user;
-        const request = await db_1.default.registrationRequest.update({
-            where: { id },
-            data: {
-                status,
-                assignedTier,
-                reviewedById: userId
-            }
+        // 1. Get current request state
+        const request = await db_1.default.registrationRequest.findUnique({
+            where: { id }
         });
-        let credentials = null;
-        // If approved, create the organization and its initial ORG_ADMIN
-        if (status === 'APPROVED') {
-            const org = await db_1.default.organization.create({
-                data: {
-                    name: request.orgName,
-                    code: request.orgCode,
-                    type: request.orgType,
-                    subscriptionTier: assignedTier || 'STARTER',
-                    status: 'APPROVED'
-                }
-            });
-            // Create the first admin user for the organization
-            const tempPassword = 'Welcome' + Math.floor(1000 + Math.random() * 9000) + '!';
-            const passwordHash = await bcrypt_1.default.hash(tempPassword, 10);
-            await db_1.default.user.create({
-                data: {
-                    fullName: request.contactPerson,
-                    email: request.officialEmail,
-                    passwordHash,
-                    role: 'ORG_ADMIN',
-                    organizationId: org.id
-                }
-            });
-            credentials = {
-                email: request.officialEmail,
-                password: tempPassword,
-                orgCode: org.code
-            };
+        if (!request) {
+            return res.status(404).json({ error: { message: 'Registration request not found.' } });
         }
+        // 2. If already approved, don't re-create organization
+        if (request.status === 'APPROVED' && status === 'APPROVED') {
+            return res.status(400).json({ error: { message: 'This request has already been approved.' } });
+        }
+        let credentials = null;
+        const updatedRequest = await db_1.default.$transaction(async (tx) => {
+            const updated = await tx.registrationRequest.update({
+                where: { id },
+                data: {
+                    status,
+                    assignedTier,
+                    reviewedById: userId
+                }
+            });
+            if (status === 'APPROVED') {
+                // Check if org already exists (safety check)
+                const existingOrg = await tx.organization.findUnique({
+                    where: { code: updated.orgCode }
+                });
+                if (existingOrg) {
+                    throw new Error(`Organization with code ${updated.orgCode} already exists.`);
+                }
+                const org = await tx.organization.create({
+                    data: {
+                        name: updated.orgName,
+                        code: updated.orgCode,
+                        type: updated.orgType,
+                        industryType: updated.industryType,
+                        subscriptionTier: assignedTier || 'STARTER',
+                        status: 'APPROVED'
+                    }
+                });
+                // Create School profile if it's an educational institution
+                if (updated.industryType === 'EDUCATION') {
+                    await tx.school.create({
+                        data: {
+                            organizationId: org.id
+                        }
+                    });
+                }
+                // Check if user already exists
+                const existingUser = await tx.user.findUnique({
+                    where: { email: updated.officialEmail }
+                });
+                if (existingUser) {
+                    throw new Error(`User with email ${updated.officialEmail} already exists.`);
+                }
+                const tempPassword = 'Welcome' + Math.floor(1000 + Math.random() * 9000) + '!';
+                const passwordHash = await bcrypt_1.default.hash(tempPassword, 10);
+                await tx.user.create({
+                    data: {
+                        fullName: updated.contactPerson,
+                        email: updated.officialEmail,
+                        passwordHash,
+                        role: (updated.industryType === 'EDUCATION') ? 'SCHOOL_ADMIN' : 'ORG_ADMIN',
+                        organizationId: org.id
+                    }
+                });
+                credentials = {
+                    email: updated.officialEmail,
+                    password: tempPassword,
+                    orgCode: org.code
+                };
+            }
+            return updated;
+        });
         res.json({
-            request,
+            request: updatedRequest,
             credentials
         });
     }
     catch (error) {
-        next(error);
+        console.error('Error in updateRequestStatus:', error);
+        res.status(500).json({ error: { message: error.message || 'Failed to update request status.' } });
     }
 };
 exports.updateRequestStatus = updateRequestStatus;

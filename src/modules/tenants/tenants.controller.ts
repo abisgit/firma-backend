@@ -100,7 +100,7 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response, next:
             return res.status(400).json({ error: { message: 'This request has already been approved.' } });
         }
 
-        let credentials = null;
+        let credentials: any = null;
 
         const updatedRequest = await prisma.$transaction(async (tx) => {
             const updated = await tx.registrationRequest.update({
