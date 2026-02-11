@@ -7,6 +7,7 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get('/', getMyMessages);
+router.get('/my', getMyMessages);
 router.post('/', sendMessage);
 router.get('/letter/:id', getMessagesByLetter);
 router.get('/history/:partnerId', getChatHistory);

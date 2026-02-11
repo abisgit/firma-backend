@@ -54,35 +54,36 @@ export const getMyMessages = async (req: AuthRequest, res: Response, next: NextF
     try {
         const { userId } = req.user!;
 
-        // Get unique conversation partners (people I've sent to or received from)
-        const sentMessages = await (prisma.message as any).findMany({
-            where: { senderId: userId, recipientId: { not: null } },
-            include: { recipient: { select: { id: true, fullName: true, role: true } } },
-            distinct: ['recipientId']
+        // Get all messages involving the user to find partners and their last messages
+        const messages = await (prisma.message as any).findMany({
+            where: {
+                OR: [
+                    { senderId: userId, recipientId: { not: null } },
+                    { recipientId: userId }
+                ]
+            },
+            include: {
+                sender: { select: { id: true, fullName: true, role: true } },
+                recipient: { select: { id: true, fullName: true, role: true } }
+            },
+            orderBy: { createdAt: 'desc' }
         });
 
-        const receivedMessages = await (prisma.message as any).findMany({
-            where: { recipientId: userId },
-            include: { sender: { select: { id: true, fullName: true, role: true } } },
-            distinct: ['senderId']
-        });
-
-        // Combine and find unique users
         const partnersMap = new Map();
-        (sentMessages as any[]).forEach(m => {
-            if (m.recipient) partnersMap.set(m.recipient.id, m.recipient);
-        });
-        (receivedMessages as any[]).forEach(m => {
-            if (m.sender) partnersMap.set(m.sender.id, m.sender);
+        (messages as any[]).forEach(msg => {
+            const partner = msg.senderId === userId ? msg.recipient : msg.sender;
+            if (partner && !partnersMap.has(partner.id)) {
+                partnersMap.set(partner.id, {
+                    id: partner.id,
+                    name: partner.fullName,
+                    role: partner.role,
+                    lastMessage: msg.content,
+                    lastMessageAt: msg.createdAt
+                });
+            }
         });
 
-        const chats = Array.from(partnersMap.values()).map(user => ({
-            id: user.id,
-            name: user.fullName,
-            role: user.role,
-            lastMessage: 'Open to view conversation'
-        }));
-
+        const chats = Array.from(partnersMap.values());
         res.json(chats);
     } catch (error) {
         next(error);
