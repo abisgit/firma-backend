@@ -49,8 +49,8 @@ export const RolePermissions: Record<string, Permission[]> = {
         'manage_events', 'view_events'
     ],
     ORG_ADMIN: [
-        'view_dashboard', 'view_letters', 'create_letters', 'edit_letters',
-        'view_templates', 'create_templates', 'edit_templates',
+        'view_dashboard', 'view_letters', 'create_letters', 'edit_letters', 'delete_letters',
+        'view_templates', 'create_templates', 'edit_templates', 'delete_templates',
         'view_hr', 'manage_employees', 'view_reports', 'manage_stamps',
         'manage_events', 'view_events',
         // Fallback Education Permissions
@@ -96,7 +96,10 @@ export const RolePermissions: Record<string, Permission[]> = {
         'view_reports',
         'manage_employees',
         'manage_events',
-        'view_events'
+        'view_events',
+        'view_letters', 'create_letters', 'edit_letters', 'delete_letters',
+        'view_templates', 'create_templates', 'edit_templates', 'delete_templates',
+        'manage_stamps'
     ],
     TEACHER: [
         'view_dashboard',
@@ -113,7 +116,8 @@ export const RolePermissions: Record<string, Permission[]> = {
         'view_grades',
         'edit_grades',
         'view_timetable',
-        'view_events'
+        'view_events',
+        'view_letters', 'create_letters'
     ],
     STUDENT: [
         'view_dashboard',
@@ -123,7 +127,8 @@ export const RolePermissions: Record<string, Permission[]> = {
         'view_grades',
         'view_timetable',
         'view_canteen',
-        'view_events'
+        'view_events',
+        'view_letters'
     ],
     PARENT: [
         'view_dashboard',
@@ -132,7 +137,8 @@ export const RolePermissions: Record<string, Permission[]> = {
         'view_attendance',
         'view_grades',
         'view_canteen',
-        'view_events'
+        'view_events',
+        'view_letters'
     ]
 };
 
