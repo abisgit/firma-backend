@@ -488,6 +488,11 @@ enum Role {
   TEACHER
   STUDENT
   PARENT
+  HOSPITAL_ADMIN
+  DOCTOR
+  NURSE
+  PHARMACIST
+  LAB_TECHNICIAN
 }
 
 enum ApplicationStatus {

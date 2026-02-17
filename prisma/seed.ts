@@ -223,6 +223,26 @@ async function main() {
     console.log('✅ Created education organization: Excel Academy International School');
 
     // =============================================
+    // HEALTHCARE ORGANIZATIONS (HOSPITALS)
+    // =============================================
+
+    // Create Hospital Organization
+    const stPauls = await prisma.organization.upsert({
+        where: { code: 'ST-PAULS' },
+        update: {},
+        create: {
+            name: "St. Paul's Hospital Millennium Medical College",
+            code: 'ST-PAULS',
+            type: OrganizationType.SUB_ORGANIZATION,
+            industryType: IndustryType.HEALTHCARE,
+            phoneNumber: '+251-11-275-0125',
+            location: 'Addis Ababa, Gullele Sub City',
+        },
+    });
+
+    console.log('✅ Created healthcare organization: St. Paul\'s Hospital');
+
+    // =============================================
     // GOVERNMENT USERS
     // =============================================
 
@@ -431,51 +451,138 @@ async function main() {
     console.log('✅ Created education users (School Admin, Teacher, Student, Parent)');
 
     // =============================================
+    // HEALTHCARE USERS (Hospital Admin, Doctor, Nurse, etc.)
+    // =============================================
+
+    // Hospital Admin
+    await prisma.user.upsert({
+        where: { email: 'admin@hospital.test' },
+        update: {},
+        create: {
+            fullName: 'Dr. Tedros Adhanom',
+            email: 'admin@hospital.test',
+            passwordHash: testPasswordHash,
+            role: Role.HOSPITAL_ADMIN,
+            organizationId: stPauls.id,
+            position: 'Chief Medical Officer',
+            phoneNumber: '+251-11-275-0126',
+        },
+    });
+
+    // Doctor
+    await prisma.user.upsert({
+        where: { email: 'doctor@hospital.test' },
+        update: {},
+        create: {
+            fullName: 'Dr. Gregory House',
+            email: 'doctor@hospital.test',
+            passwordHash: testPasswordHash,
+            role: Role.DOCTOR,
+            organizationId: stPauls.id,
+            position: 'Head of Diagnostics',
+            phoneNumber: '+251-11-275-0127',
+        },
+    });
+
+    // Nurse
+    await prisma.user.upsert({
+        where: { email: 'nurse@hospital.test' },
+        update: {},
+        create: {
+            fullName: 'Nurse Jackie Peyton',
+            email: 'nurse@hospital.test',
+            passwordHash: testPasswordHash,
+            role: Role.NURSE,
+            organizationId: stPauls.id,
+            position: 'Senior Nurse',
+            phoneNumber: '+251-11-275-0128',
+        },
+    });
+
+    // Pharmacist
+    await prisma.user.upsert({
+        where: { email: 'pharmacist@hospital.test' },
+        update: {},
+        create: {
+            fullName: 'Pharmacist John Smith',
+            email: 'pharmacist@hospital.test',
+            passwordHash: testPasswordHash,
+            role: Role.PHARMACIST,
+            organizationId: stPauls.id,
+            position: 'BSc Pharmacist',
+            phoneNumber: '+251-11-275-0129',
+        },
+    });
+
+    // Lab Technician
+    await prisma.user.upsert({
+        where: { email: 'lab@hospital.test' },
+        update: {},
+        create: {
+            fullName: 'Lab Tech Sam Wilson',
+            email: 'lab@hospital.test',
+            passwordHash: testPasswordHash,
+            role: Role.LAB_TECHNICIAN,
+            organizationId: stPauls.id,
+            position: 'Laboratory Coordinator',
+            phoneNumber: '+251-11-275-0130',
+        },
+    });
+
+    console.log('✅ Created healthcare users (Admin, Doctor, Nurse, Pharmacist, Lab Technician)');
+
+    // =============================================
     // EDUCATION DATA (Subjects, Classes, Academic Year)
     // =============================================
 
     // Create Subjects
     const mathSubject = await prisma.subject.upsert({
         where: {
-            code_schoolId: {
+            code_schoolId_grade: {
                 code: 'MATH',
                 schoolId: excelSchool.id,
+                grade: '8',
             },
         },
         update: {},
         create: {
             name: 'Mathematics',
             code: 'MATH',
+            grade: '8',
             schoolId: excelSchool.id,
         },
     });
 
     const engSubject = await prisma.subject.upsert({
         where: {
-            code_schoolId: {
+            code_schoolId_grade: {
                 code: 'ENG',
                 schoolId: excelSchool.id,
+                grade: '8',
             },
         },
         update: {},
         create: {
             name: 'English',
             code: 'ENG',
+            grade: '8',
             schoolId: excelSchool.id,
         },
     });
 
     const sciSubject = await prisma.subject.upsert({
         where: {
-            code_schoolId: {
+            code_schoolId_grade: {
                 code: 'SCI',
                 schoolId: excelSchool.id,
+                grade: '8',
             },
         },
         update: {},
         create: {
             name: 'Science',
             code: 'SCI',
+            grade: '8',
             schoolId: excelSchool.id,
         },
     });
@@ -968,6 +1075,10 @@ Sincerely,
     console.log('  - Subjects: 3 (Math, English, Science)');
     console.log('  - Classes: 1 (Grade 8 - Section A)');
     console.log('  - Academic Year: 1 (2025-2026)');
+    console.log('');
+    console.log('HEALTHCARE:');
+    console.log('  - Hospitals: 1 (St. Paul\'s Hospital)');
+    console.log('  - Users: 5 (Admin, Doctor, Nurse, Pharmacist, Lab Tech)');
     console.log('───────────────────────────────────────────');
     console.log('\n🔑 Login Credentials:');
     console.log('');
@@ -981,6 +1092,13 @@ Sincerely,
     console.log('  - Teacher: teacher@school.test / password123');
     console.log('  - Student: student@school.test / password123');
     console.log('  - Parent: parent@school.test / password123');
+    console.log('');
+    console.log('🏥 HEALTHCARE USERS:');
+    console.log('  - Hospital Admin: admin@hospital.test / password123');
+    console.log('  - Doctor: doctor@hospital.test / password123');
+    console.log('  - Nurse: nurse@hospital.test / password123');
+    console.log('  - Pharmacist: pharmacist@hospital.test / password123');
+    console.log('  - Lab Tech: lab@hospital.test / password123');
     console.log('───────────────────────────────────────────');
 }
 
