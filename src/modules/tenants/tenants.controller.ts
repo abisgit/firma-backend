@@ -52,7 +52,7 @@ export const submitRegistrationRequest = async (req: Request, res: Response, nex
                 identitySystem,
                 phone,
                 intendedUse,
-                industryType: orgType === 'EDUCATION' ? 'EDUCATION' : 'GOVERNMENT'
+                industryType: ['EDUCATION', 'HEALTHCARE', 'FINANCE', 'LEGAL'].includes(orgType) ? orgType : 'GOVERNMENT'
             }
         });
 
@@ -159,7 +159,9 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response, next:
                         fullName: updated.contactPerson,
                         email: updated.officialEmail,
                         passwordHash,
-                        role: ((updated as any).industryType === 'EDUCATION') ? ('SCHOOL_ADMIN' as any) : ('ORG_ADMIN' as any),
+                        role: ((updated as any).industryType === 'EDUCATION')
+                            ? ('SCHOOL_ADMIN' as any)
+                            : ((updated as any).industryType === 'HEALTHCARE' ? ('HOSPITAL_ADMIN' as any) : ('ORG_ADMIN' as any)),
                         organizationId: org.id
                     }
                 });
