@@ -11,11 +11,17 @@ export const submitRegistrationRequest = async (req: Request, res: Response, nex
             officialEmail, identitySystem, phone, intendedUse
         } = req.body;
 
-        if (!orgCode) {
-            return res.status(400).json({ error: { message: 'Organization code is required.' } });
+        let finalOrgCode = orgCode?.trim().toUpperCase();
+
+        if (!finalOrgCode) {
+            // Generate a code if not provided (e.g. "Lancet Hospital" -> "LAN-1234")
+            const cleanName = (orgName || '').replace(/[^A-Z]/gi, '').toUpperCase();
+            const prefix = cleanName.substring(0, 3) || 'ORG';
+            const random = Math.floor(1000 + Math.random() * 9000);
+            finalOrgCode = `${prefix}-${random}`;
         }
 
-        const normalizedCode = orgCode.toUpperCase();
+        const normalizedCode = finalOrgCode;
 
         // 1. Check if an active request already exists for this code
         const existingRequest = await prisma.registrationRequest.findFirst({

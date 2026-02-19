@@ -538,6 +538,10 @@ enum OrganizationType {
   SCHOOL
   COLLEGE
   UNIVERSITY
+  HEALTHCARE
+  LEGAL
+  FINANCE
+  OTHER
 }
 
 enum SubscriptionTier {
