@@ -648,6 +648,11 @@ model Patient {
   lastVisit        DateTime?
   status           String            @default("Outpatient")
   department       String
+  dateOfBirth      DateTime?
+  maritalStatus    String?
+  address          String?
+  photoUrl         String?
+  criticalInfo     Json?             @default("{}") // Store Diseases, Genetic Risks, Socioeconomics, Lifestyle, etc.
   organizationId   String
   organization     Organization      @relation(fields: [organizationId], references: [id])
   medicalRecords   MedicalRecord[]
