@@ -1,8 +1,10 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HealthcareController = void 0;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const db_1 = __importDefault(require("../../config/db"));
 class HealthcareController {
     // Patients
     static async getPatients(req, res) {
@@ -10,7 +12,7 @@ class HealthcareController {
             const organizationId = req.user?.organizationId;
             if (!organizationId)
                 return res.status(403).json({ error: 'Organization identifier missing' });
-            const patients = await prisma.patient.findMany({
+            const patients = await db_1.default.patient.findMany({
                 where: { organizationId },
                 orderBy: { createdAt: 'desc' }
             });
@@ -26,7 +28,7 @@ class HealthcareController {
             const organizationId = req.user?.organizationId;
             if (!organizationId)
                 return res.status(403).json({ error: 'Organization identifier missing' });
-            const doctors = await prisma.doctor.findMany({
+            const doctors = await db_1.default.doctor.findMany({
                 where: { organizationId },
                 orderBy: { fullName: 'asc' }
             });
@@ -42,7 +44,7 @@ class HealthcareController {
             const organizationId = req.user?.organizationId;
             if (!organizationId)
                 return res.status(403).json({ error: 'Organization identifier missing' });
-            const appointments = await prisma.appointment.findMany({
+            const appointments = await db_1.default.appointment.findMany({
                 where: { organizationId },
                 include: {
                     patient: true,
@@ -62,7 +64,7 @@ class HealthcareController {
             const organizationId = req.user?.organizationId;
             if (!organizationId)
                 return res.status(403).json({ error: 'Organization identifier missing' });
-            const medicines = await prisma.medicine.findMany({
+            const medicines = await db_1.default.medicine.findMany({
                 where: { organizationId },
                 orderBy: { name: 'asc' }
             });
@@ -78,7 +80,7 @@ class HealthcareController {
             const organizationId = req.user?.organizationId;
             if (!organizationId)
                 return res.status(403).json({ error: 'Organization identifier missing' });
-            const tests = await prisma.labTest.findMany({
+            const tests = await db_1.default.labTest.findMany({
                 where: { organizationId },
                 orderBy: { createdAt: 'desc' }
             });
@@ -94,7 +96,7 @@ class HealthcareController {
             const organizationId = req.user?.organizationId;
             if (!organizationId)
                 return res.status(403).json({ error: 'Organization identifier missing' });
-            const transactions = await prisma.healthcareTransaction.findMany({
+            const transactions = await db_1.default.healthcareTransaction.findMany({
                 where: { organizationId },
                 orderBy: { transactionDate: 'desc' }
             });
