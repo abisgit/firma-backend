@@ -11,4 +11,5 @@ router.get('/appointments', healthcare_controller_1.HealthcareController.getAppo
 router.get('/medicines', healthcare_controller_1.HealthcareController.getMedicines);
 router.get('/lab-tests', healthcare_controller_1.HealthcareController.getLabTests);
 router.get('/transactions', healthcare_controller_1.HealthcareController.getTransactions);
+router.get('/summary', healthcare_controller_1.HealthcareController.getSummaryStats);
 exports.default = router;
