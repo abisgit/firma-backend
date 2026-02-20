@@ -532,6 +532,182 @@ async function main() {
     console.log('✅ Created healthcare users (Admin, Doctor, Nurse, Pharmacist, Lab Technician)');
 
     // =============================================
+    // HEALTHCARE OPERATIONAL DATA (ST. PAULS)
+    // =============================================
+
+    console.log('🏥 Seeding healthcare operational data...');
+
+    // 1. Doctors
+    const drHouse = await prisma.doctor.upsert({
+        where: { id: 'doctor-house-id' },
+        update: {},
+        create: {
+            id: 'doctor-house-id',
+            fullName: 'Dr. Gregory House',
+            specialty: 'Cardiology',
+            hospitalRole: 'Head of Department',
+            status: 'On Duty',
+            phone: '+251-11-275-0127',
+            organizationId: stPauls.id,
+        }
+    });
+
+    const drGrey = await prisma.doctor.upsert({
+        where: { id: 'doctor-grey-id' },
+        update: {},
+        create: {
+            id: 'doctor-grey-id',
+            fullName: 'Dr. Meredith Grey',
+            specialty: 'Surgery',
+            hospitalRole: 'Surgical Resident',
+            status: 'On Duty',
+            organizationId: stPauls.id,
+        }
+    });
+
+    const drStrange = await prisma.doctor.upsert({
+        where: { id: 'doctor-strange-id' },
+        update: {},
+        create: {
+            id: 'doctor-strange-id',
+            fullName: 'Dr. Stephen Strange',
+            specialty: 'Neurology',
+            hospitalRole: 'Chief Neurosurgeon',
+            status: 'In Surgery',
+            organizationId: stPauls.id,
+        }
+    });
+
+    const drShaun = await prisma.doctor.upsert({
+        where: { id: 'doctor-shaun-id' },
+        update: {},
+        create: {
+            id: 'doctor-shaun-id',
+            fullName: 'Dr. Shaun Murphy',
+            specialty: 'Surgery',
+            hospitalRole: 'Surgical Resident',
+            status: 'On Duty',
+            organizationId: stPauls.id,
+        }
+    });
+
+    // 2. Patients
+    const patientsData = [
+        { id: 'patient-doe-id', patientId: 'PAT-001', fullName: 'John Doe', age: 45, gender: 'Male', bloodGroup: 'O+', lastVisit: new Date('2024-03-10'), status: 'Inpatient', department: 'Cardiology' },
+        { id: 'patient-smith-id', patientId: 'PAT-002', fullName: 'Sarah Smith', age: 32, gender: 'Female', bloodGroup: 'A-', lastVisit: new Date('2024-03-12'), status: 'Outpatient', department: 'Neurology' },
+        { id: 'patient-johnson-id', patientId: 'PAT-003', fullName: 'Mike Johnson', age: 28, gender: 'Male', bloodGroup: 'B+', lastVisit: new Date('2024-03-14'), status: 'In Surgery', department: 'General Surgery' },
+        { id: 'patient-brown-id', patientId: 'PAT-004', fullName: 'Emily Brown', age: 52, gender: 'Female', bloodGroup: 'AB+', lastVisit: new Date('2024-03-15'), status: 'Inpatient', department: 'Orthopedics' },
+        { id: 'patient-wilson-id', patientId: 'PAT-005', fullName: 'Robert Wilson', age: 61, gender: 'Male', bloodGroup: 'O-', lastVisit: new Date('2024-03-15'), status: 'Discharged', department: 'Oncology' },
+        { id: 'patient-cooper-id', patientId: 'PAT-006', fullName: 'Alice Cooper', age: 29, gender: 'Female', bloodGroup: 'B-', lastVisit: new Date('2024-03-16'), status: 'Outpatient', department: 'Cardiology' },
+        { id: 'patient-marley-id', patientId: 'PAT-007', fullName: 'Bob Marley', age: 36, gender: 'Male', bloodGroup: 'A+', lastVisit: new Date('2024-03-16'), status: 'Outpatient', department: 'Neurology' },
+        { id: 'patient-chaplin-id', patientId: 'PAT-008', fullName: 'Charlie Chaplin', age: 42, gender: 'Male', bloodGroup: 'AB-', lastVisit: new Date('2024-03-17'), status: 'Outpatient', department: 'Surgery' },
+        { id: 'patient-ross-id', patientId: 'PAT-009', fullName: 'Diana Ross', age: 55, gender: 'Female', bloodGroup: 'O+', lastVisit: new Date('2024-03-17'), status: 'Emergency', department: 'Cardiology' },
+    ];
+
+    const patientsList = [];
+    for (const pData of patientsData) {
+        const patient = await prisma.patient.upsert({
+            where: { patientId: pData.patientId },
+            update: {},
+            create: {
+                ...pData,
+                organizationId: stPauls.id
+            }
+        });
+        patientsList.push(patient);
+    }
+
+    // Checking if appointments exist before creating
+    const appointmentCount = await prisma.appointment.count({ where: { organizationId: stPauls.id } });
+    if (appointmentCount === 0) {
+        // 3. Appointments
+        await prisma.appointment.createMany({
+            data: [
+                {
+                    patientId: patientsList.find(p => p.fullName === 'Alice Cooper')!.id,
+                    doctorId: drHouse.id,
+                    appointmentDate: new Date('2024-03-20'),
+                    timeSlot: '09:00 AM',
+                    type: 'First Visit',
+                    status: 'Confirmed',
+                    organizationId: stPauls.id
+                },
+                {
+                    patientId: patientsList.find(p => p.fullName === 'Bob Marley')!.id,
+                    doctorId: drStrange.id,
+                    appointmentDate: new Date('2024-03-20'),
+                    timeSlot: '10:30 AM',
+                    type: 'Follow-up',
+                    status: 'Pending',
+                    organizationId: stPauls.id
+                },
+                {
+                    patientId: patientsList.find(p => p.fullName === 'Charlie Chaplin')!.id,
+                    doctorId: drGrey.id,
+                    appointmentDate: new Date('2024-03-20'),
+                    timeSlot: '01:15 PM',
+                    type: 'Checkup',
+                    status: 'Confirmed',
+                    organizationId: stPauls.id
+                },
+                {
+                    patientId: patientsList.find(p => p.fullName === 'Diana Ross')!.id,
+                    doctorId: drHouse.id,
+                    appointmentDate: new Date('2024-03-20'),
+                    timeSlot: '03:45 PM',
+                    type: 'Urgent',
+                    status: 'Cancelled',
+                    organizationId: stPauls.id
+                }
+            ]
+        });
+    }
+
+    // Inventory
+    const medicineCount = await prisma.medicine.count({ where: { organizationId: stPauls.id } });
+    if (medicineCount === 0) {
+        await prisma.medicine.createMany({
+            data: [
+                { name: "Amoxicillin 500mg", category: "Antibiotic", stock: 1250, expiryDate: new Date('2025-06-12'), status: "In Stock", organizationId: stPauls.id },
+                { name: "Lisinopril 10mg", category: "BP Medicine", stock: 840, expiryDate: new Date('2025-02-10'), status: "Low Stock", organizationId: stPauls.id },
+                { name: "Insulin Glargine", category: "Diabetes", stock: 45, expiryDate: new Date('2024-12-15'), status: "Out of Stock", organizationId: stPauls.id },
+                { name: "Paracetamol 500mg", category: "Painkiller", stock: 5000, expiryDate: new Date('2026-08-20'), status: "In Stock", organizationId: stPauls.id },
+                { name: "Atorvastatin 20mg", category: "Cholesterol", stock: 1100, expiryDate: new Date('2025-04-25'), status: "In Stock", organizationId: stPauls.id },
+            ]
+        });
+    }
+
+    // Lab
+    const labCount = await prisma.labTest.count({ where: { organizationId: stPauls.id } });
+    if (labCount === 0) {
+        await prisma.labTest.createMany({
+            data: [
+                { testName: "Complete Blood Count (CBC)", patientName: "John Doe", priority: "Normal", status: "Completed", organizationId: stPauls.id },
+                { testName: "Lipid Profile", patientName: "Sarah Smith", priority: "Urgent", status: "In Progress", organizationId: stPauls.id },
+                { testName: "Liver Function Test", patientName: "Mike Johnson", priority: "Stat", status: "Awaiting Sample", organizationId: stPauls.id },
+                { testName: "Thyroid Profile (T3, T4, TSH)", patientName: "Emily Brown", priority: "Normal", status: "Completed", organizationId: stPauls.id },
+                { testName: "Blood Glucose Fasting", patientName: "Robert Wilson", priority: "Urgent", status: "Completed", organizationId: stPauls.id },
+            ]
+        });
+    }
+
+    // Billing
+    const txCount = await prisma.healthcareTransaction.count({ where: { organizationId: stPauls.id } });
+    if (txCount === 0) {
+        await prisma.healthcareTransaction.createMany({
+            data: [
+                { patientName: "John Doe", service: "Cardiology Consultation", amount: 150.00, status: "Paid", transactionDate: new Date('2024-03-15'), organizationId: stPauls.id },
+                { patientName: "Sarah Smith", service: "MRI Scan - Brain", amount: 1200.00, status: "Pending", transactionDate: new Date('2024-03-15'), organizationId: stPauls.id },
+                { patientName: "Mike Johnson", service: "Appendectomy Surgery", amount: 4500.00, status: "Insurance Claims", transactionDate: new Date('2024-03-14'), organizationId: stPauls.id },
+                { patientName: "Emily Brown", service: "Pharmacy - Antibiotics", amount: 45.50, status: "Paid", transactionDate: new Date('2024-03-14'), organizationId: stPauls.id },
+                { patientName: "Robert Wilson", service: "Chemotherapy Session", amount: 850.00, status: "Paid", transactionDate: new Date('2024-03-13'), organizationId: stPauls.id },
+            ]
+        });
+    }
+
+    console.log('✅ Created comprehensive healthcare data for St. Paul\'s Hospital');
+
+    // =============================================
     // EDUCATION DATA (Subjects, Classes, Academic Year)
     // =============================================
 
@@ -1055,6 +1231,11 @@ Sincerely,
     });
 
     console.log('✅ Created sample letters');
+
+    console.log('✅ Created sample letters');
+
+    // =============================================
+    // SUMMARY
 
     // =============================================
     // SUMMARY

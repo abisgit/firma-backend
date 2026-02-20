@@ -6723,3 +6723,5 @@
 2026-02-19T13:17:11.183Z - POST /tenants/request
 2026-02-19T13:19:14.733Z - POST /tenants/request
 2026-02-19T13:20:00.731Z - POST /tenants/request
+2026-02-19T13:53:05.693Z - GET /marketing
+2026-02-19T13:53:05.895Z - GET /organizations/public

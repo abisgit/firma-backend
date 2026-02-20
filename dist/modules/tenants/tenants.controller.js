@@ -9,10 +9,15 @@ const bcrypt_1 = __importDefault(require("bcrypt"));
 const submitRegistrationRequest = async (req, res, next) => {
     try {
         const { orgName, orgType, orgCode, contactPerson, officialEmail, identitySystem, phone, intendedUse } = req.body;
-        if (!orgCode) {
-            return res.status(400).json({ error: { message: 'Organization code is required.' } });
+        let finalOrgCode = orgCode?.trim().toUpperCase();
+        if (!finalOrgCode) {
+            // Generate a code if not provided (e.g. "Lancet Hospital" -> "LAN-1234")
+            const cleanName = (orgName || '').replace(/[^A-Z]/gi, '').toUpperCase();
+            const prefix = cleanName.substring(0, 3) || 'ORG';
+            const random = Math.floor(1000 + Math.random() * 9000);
+            finalOrgCode = `${prefix}-${random}`;
         }
-        const normalizedCode = orgCode.toUpperCase();
+        const normalizedCode = finalOrgCode;
         // 1. Check if an active request already exists for this code
         const existingRequest = await db_1.default.registrationRequest.findFirst({
             where: {
@@ -44,7 +49,7 @@ const submitRegistrationRequest = async (req, res, next) => {
                 identitySystem,
                 phone,
                 intendedUse,
-                industryType: orgType === 'EDUCATION' ? 'EDUCATION' : 'GOVERNMENT'
+                industryType: ['EDUCATION', 'HEALTHCARE', 'FINANCE', 'LEGAL'].includes(orgType) ? orgType : 'GOVERNMENT'
             }
         });
         res.status(201).json(request);
@@ -139,7 +144,9 @@ const updateRequestStatus = async (req, res, next) => {
                         fullName: updated.contactPerson,
                         email: updated.officialEmail,
                         passwordHash,
-                        role: (updated.industryType === 'EDUCATION') ? 'SCHOOL_ADMIN' : 'ORG_ADMIN',
+                        role: (updated.industryType === 'EDUCATION')
+                            ? 'SCHOOL_ADMIN'
+                            : (updated.industryType === 'HEALTHCARE' ? 'HOSPITAL_ADMIN' : 'ORG_ADMIN'),
                         organizationId: org.id
                     }
                 });

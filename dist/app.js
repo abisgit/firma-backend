@@ -30,6 +30,7 @@ const parents_routes_1 = __importDefault(require("./modules/parents/parents.rout
 const academic_routes_1 = __importDefault(require("./modules/academic/academic.routes"));
 const invoices_routes_1 = __importDefault(require("./modules/invoices/invoices.routes"));
 const banks_routes_1 = __importDefault(require("./modules/banks/banks.routes"));
+const healthcare_routes_1 = __importDefault(require("./modules/healthcare/healthcare.routes"));
 const path_1 = __importDefault(require("path"));
 // ... imports
 const app = (0, express_1.default)();
@@ -67,5 +68,6 @@ app.use('/parents', parents_routes_1.default);
 app.use('/academic', academic_routes_1.default);
 app.use('/invoices', invoices_routes_1.default);
 app.use('/banks', banks_routes_1.default);
+app.use('/healthcare', healthcare_routes_1.default);
 app.use(error_middleware_1.errorHandler);
 exports.default = app;

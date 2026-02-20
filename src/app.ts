@@ -27,6 +27,7 @@ import parentRoutes from './modules/parents/parents.routes';
 import academicRoutes from './modules/academic/academic.routes';
 import invoiceRoutes from './modules/invoices/invoices.routes';
 import bankRoutes from './modules/banks/banks.routes';
+import healthcareRoutes from './modules/healthcare/healthcare.routes';
 import path from 'path';
 
 // ... imports
@@ -69,6 +70,7 @@ app.use('/parents', parentRoutes);
 app.use('/academic', academicRoutes);
 app.use('/invoices', invoiceRoutes);
 app.use('/banks', bankRoutes);
+app.use('/healthcare', healthcareRoutes);
 
 app.use(errorHandler);
 

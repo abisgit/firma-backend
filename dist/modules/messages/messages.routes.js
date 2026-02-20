@@ -6,6 +6,7 @@ const messages_controller_1 = require("./messages.controller");
 const router = (0, express_1.Router)();
 router.use(auth_middleware_1.authMiddleware);
 router.get('/', messages_controller_1.getMyMessages);
+router.get('/my', messages_controller_1.getMyMessages);
 router.post('/', messages_controller_1.sendMessage);
 router.get('/letter/:id', messages_controller_1.getMessagesByLetter);
 router.get('/history/:partnerId', messages_controller_1.getChatHistory);

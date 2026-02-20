@@ -35,6 +35,13 @@ model Organization {
   school               School?
   users                User[]
   invoices             Invoice[]
+  patients             Patient[]
+  doctors              Doctor[]
+  appointments         Appointment[]
+  medicalRecords       MedicalRecord[]
+  medicines            Medicine[]
+  labTests             LabTest[]
+  healthcareTransactions HealthcareTransaction[]
 }
 
 model RegistrationRequest {
@@ -628,4 +635,113 @@ model Bank {
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+// Healthcare Models
+model Patient {
+  id               String            @id @default(uuid())
+  patientId        String            @unique // e.g., PAT-001
+  fullName         String
+  age              Int
+  gender           String
+  bloodGroup       String
+  lastVisit        DateTime?
+  status           String            @default("Outpatient")
+  department       String
+  organizationId   String
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  medicalRecords   MedicalRecord[]
+  appointments     Appointment[]
+  transactions     HealthcareTransaction[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model Doctor {
+  id               String            @id @default(uuid())
+  fullName         String
+  specialty        String
+  hospitalRole     String            @default("Physician")
+  status           String            @default("Active")
+  phone            String?
+  email            String?
+  organizationId   String
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  appointments     Appointment[]
+  medicalRecords   MedicalRecord[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model Appointment {
+  id               String            @id @default(uuid())
+  patientId        String
+  doctorId         String
+  appointmentDate  DateTime
+  timeSlot         String
+  type             String            @default("Checkup")
+  status           String            @default("Confirmed")
+  organizationId   String
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  patient          Patient           @relation(fields: [patientId], references: [id])
+  doctor           Doctor            @relation(fields: [doctorId], references: [id])
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model MedicalRecord {
+  id               String            @id @default(uuid())
+  patientId        String
+  doctorId         String
+  diagnosis        String
+  treatment        String?
+  status           String            @default("Completed")
+  visitDate        DateTime          @default(now())
+  organizationId   String
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  patient          Patient           @relation(fields: [patientId], references: [id])
+  doctor           Doctor            @relation(fields: [doctorId], references: [id])
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model Medicine {
+  id               String            @id @default(uuid())
+  name             String
+  category         String
+  stock            Int               @default(0)
+  expiryDate       DateTime
+  status           String            @default("Available")
+  organizationId   String
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model LabTest {
+  id               String            @id @default(uuid())
+  testName         String
+  patientName      String
+  status           String            @default("Pending")
+  priority         String            @default("Medium")
+  result           String?
+  organizationId   String
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model HealthcareTransaction {
+  id               String            @id @default(uuid())
+  patientId        String?
+  patientName      String
+  service          String
+  amount           Float
+  status           String            @default("Paid")
+  transactionDate  DateTime          @default(now())
+  organizationId   String
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  patient          Patient?          @relation(fields: [patientId], references: [id])
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 }
