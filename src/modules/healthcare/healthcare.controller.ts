@@ -26,7 +26,10 @@ export class HealthcareController {
             if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
 
             const patient = await prisma.patient.findFirst({
-                where: { id, organizationId },
+                where: {
+                    id: id as string,
+                    organizationId: organizationId as string
+                },
                 include: {
                     medicalRecords: {
                         include: { doctor: true },
@@ -73,7 +76,10 @@ export class HealthcareController {
             if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
 
             const patient = await prisma.patient.updateMany({
-                where: { id, organizationId },
+                where: {
+                    id: id as string,
+                    organizationId: organizationId as string
+                },
                 data: req.body
             });
 
@@ -91,7 +97,10 @@ export class HealthcareController {
             if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
 
             const patient = await prisma.patient.deleteMany({
-                where: { id, organizationId }
+                where: {
+                    id: id as string,
+                    organizationId: organizationId as string
+                },
             });
 
             if (patient.count === 0) return res.status(404).json({ error: 'Patient not found' });

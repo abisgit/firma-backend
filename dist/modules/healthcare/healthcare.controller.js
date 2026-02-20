@@ -22,6 +22,97 @@ class HealthcareController {
             res.status(500).json({ error: 'Failed to fetch patients' });
         }
     }
+    static async getPatient(req, res) {
+        try {
+            const { id } = req.params;
+            const organizationId = req.user?.organizationId;
+            if (!organizationId)
+                return res.status(403).json({ error: 'Organization identifier missing' });
+            const patient = await db_1.default.patient.findFirst({
+                where: {
+                    id: id,
+                    organizationId: organizationId
+                },
+                include: {
+                    medicalRecords: {
+                        include: { doctor: true },
+                        orderBy: { visitDate: 'desc' }
+                    },
+                    appointments: {
+                        include: { doctor: true },
+                        orderBy: { appointmentDate: 'desc' }
+                    },
+                    transactions: {
+                        orderBy: { transactionDate: 'desc' }
+                    }
+                }
+            });
+            if (!patient)
+                return res.status(404).json({ error: 'Patient not found' });
+            res.json(patient);
+        }
+        catch (error) {
+            res.status(500).json({ error: 'Failed to fetch patient details' });
+        }
+    }
+    static async createPatient(req, res) {
+        try {
+            const organizationId = req.user?.organizationId;
+            if (!organizationId)
+                return res.status(403).json({ error: 'Organization identifier missing' });
+            const patient = await db_1.default.patient.create({
+                data: {
+                    ...req.body,
+                    organizationId
+                }
+            });
+            res.status(201).json(patient);
+        }
+        catch (error) {
+            res.status(500).json({ error: 'Failed to create patient' });
+        }
+    }
+    static async updatePatient(req, res) {
+        try {
+            const { id } = req.params;
+            const organizationId = req.user?.organizationId;
+            if (!organizationId)
+                return res.status(403).json({ error: 'Organization identifier missing' });
+            const patient = await db_1.default.patient.updateMany({
+                where: {
+                    id: id,
+                    organizationId: organizationId
+                },
+                data: req.body
+            });
+            if (patient.count === 0)
+                return res.status(404).json({ error: 'Patient not found' });
+            res.json({ message: 'Patient updated successfully' });
+        }
+        catch (error) {
+            res.status(500).json({ error: 'Failed to update patient' });
+        }
+    }
+    static async deletePatient(req, res) {
+        try {
+            const { id } = req.params;
+            const organizationId = req.user?.organizationId;
+            if (!organizationId)
+                return res.status(403).json({ error: 'Organization identifier missing' });
+            const patient = await db_1.default.patient.deleteMany({
+                where: {
+                    id: id,
+                    organizationId: organizationId
+                },
+            });
+            if (patient.count === 0)
+                return res.status(404).json({ error: 'Patient not found' });
+            res.json({ message: 'Patient deleted successfully' });
+        }
+        catch (error) {
+            res.status(500).json({ error: 'Failed to delete patient' });
+        }
+    }
     // Doctors
     static async getDoctors(req, res) {
         try {
