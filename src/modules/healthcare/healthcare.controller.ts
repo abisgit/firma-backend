@@ -63,7 +63,33 @@ export class HealthcareController {
                 }
             });
 
-            if (!patient) return res.status(404).json({ error: 'Patient not found' });
+            if (!patient) {
+                // FALLBACK: Try without includes to see if it's a relation issue
+                const barePatient = await prisma.patient.findFirst({
+                    where: {
+                        AND: [
+                            { organizationId: organizationId as string },
+                            {
+                                OR: [
+                                    { id: cleanId },
+                                    { patientId: cleanId }
+                                ]
+                            }
+                        ]
+                    }
+                });
+
+                if (barePatient) {
+                    return res.status(500).json({
+                        error: 'Patient exists but details failed to load',
+                        details: 'A medical record or relation might be corrupted or missing for this patient.'
+                    });
+                }
+
+                return res.status(404).json({
+                    error: `Patient ID "${cleanId}" not found in organization "${organizationId}".`
+                });
+            }
 
             res.json(patient);
         } catch (error: any) {
