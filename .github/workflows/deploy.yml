@@ -9,6 +9,7 @@ env:
   FRONTEND_IMAGE: abisgit/firma-backend
   DOCKER_TAG: ${{ github.sha }}
 
+  
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
