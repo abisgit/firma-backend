@@ -178,6 +178,64 @@ export class HealthcareController {
         }
     }
 
+    static async createLabTest(req: AuthRequest, res: Response) {
+        try {
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const test = await prisma.labTest.create({
+                data: {
+                    ...req.body,
+                    organizationId
+                }
+            });
+            res.status(201).json(test);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to create lab test' });
+        }
+    }
+
+    static async updateLabTest(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const test = await prisma.labTest.updateMany({
+                where: {
+                    id: id as string,
+                    organizationId: organizationId as string
+                },
+                data: req.body
+            });
+
+            if (test.count === 0) return res.status(404).json({ error: 'Lab test not found' });
+            res.json({ message: 'Lab test updated successfully' });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to update lab test' });
+        }
+    }
+
+    static async deleteLabTest(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const test = await prisma.labTest.deleteMany({
+                where: {
+                    id: id as string,
+                    organizationId: organizationId as string
+                },
+            });
+
+            if (test.count === 0) return res.status(404).json({ error: 'Lab test not found' });
+            res.json({ message: 'Lab test deleted successfully' });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to delete lab test' });
+        }
+    }
+
     // Billing
     static async getTransactions(req: AuthRequest, res: Response) {
         try {

@@ -15,6 +15,9 @@ router.get('/doctors', HealthcareController.getDoctors);
 router.get('/appointments', HealthcareController.getAppointments);
 router.get('/medicines', HealthcareController.getMedicines);
 router.get('/lab-tests', HealthcareController.getLabTests);
+router.post('/lab-tests', HealthcareController.createLabTest);
+router.put('/lab-tests/:id', HealthcareController.updateLabTest);
+router.delete('/lab-tests/:id', HealthcareController.deleteLabTest);
 router.get('/transactions', HealthcareController.getTransactions);
 router.get('/summary', HealthcareController.getSummaryStats);
 

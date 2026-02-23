@@ -687,6 +687,11 @@ async function main() {
                 { testName: "Liver Function Test", patientName: "Mike Johnson", priority: "Stat", status: "Awaiting Sample", organizationId: stPauls.id },
                 { testName: "Thyroid Profile (T3, T4, TSH)", patientName: "Emily Brown", priority: "Normal", status: "Completed", organizationId: stPauls.id },
                 { testName: "Blood Glucose Fasting", patientName: "Robert Wilson", priority: "Urgent", status: "Completed", organizationId: stPauls.id },
+                { testName: "Urinalysis", patientName: "Alice Cooper", priority: "Normal", status: "Pending", organizationId: stPauls.id },
+                { testName: "X-Ray Chest", patientName: "Bob Marley", priority: "High", status: "Awaiting Sample", organizationId: stPauls.id },
+                { testName: "Electrocardiogram (ECG)", patientName: "Charlie Chaplin", priority: "Stat", status: "Completed", organizationId: stPauls.id },
+                { testName: "C-Reactive Protein (CRP)", patientName: "Diana Ross", priority: "Urgent", status: "In Progress", organizationId: stPauls.id },
+                { testName: "Erythrocyte Sedimentation Rate", patientName: "John Doe", priority: "Normal", status: "Pending", organizationId: stPauls.id },
             ]
         });
     }
