@@ -46,6 +46,7 @@ model Organization {
   medicines            Medicine[]
   labTests             LabTest[]
   healthcareTransactions HealthcareTransaction[]
+  prescriptions        Prescription[]
 }
 
 model RegistrationRequest {

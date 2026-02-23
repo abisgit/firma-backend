@@ -57,6 +57,7 @@ router.post('/lab-tests', HealthcareController.createLabTest);
 router.put('/lab-tests/:id', HealthcareController.updateLabTest);
 router.delete('/lab-tests/:id', HealthcareController.deleteLabTest);
 router.get('/transactions', HealthcareController.getTransactions);
+router.post('/transactions', HealthcareController.createTransaction);
 router.get('/summary', HealthcareController.getSummaryStats);
 
 // Prescriptions

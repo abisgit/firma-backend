@@ -41,6 +41,15 @@ export class HealthcareController {
                     },
                     transactions: {
                         orderBy: { transactionDate: 'desc' }
+                    },
+                    prescriptions: {
+                        include: {
+                            doctor: true,
+                            items: {
+                                include: { medicine: true }
+                            }
+                        },
+                        orderBy: { createdAt: 'desc' }
                     }
                 }
             });
@@ -589,11 +598,30 @@ export class HealthcareController {
 
             const transactions = await prisma.healthcareTransaction.findMany({
                 where: { organizationId },
+                include: { patient: true },
                 orderBy: { transactionDate: 'desc' }
             });
             res.json(transactions);
         } catch (error) {
             res.status(500).json({ error: 'Failed to fetch transactions' });
+        }
+    }
+
+    static async createTransaction(req: AuthRequest, res: Response) {
+        try {
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const transaction = await prisma.healthcareTransaction.create({
+                data: {
+                    ...req.body,
+                    organizationId
+                },
+                include: { patient: true }
+            });
+            res.status(201).json(transaction);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to create transaction' });
         }
     }
 
