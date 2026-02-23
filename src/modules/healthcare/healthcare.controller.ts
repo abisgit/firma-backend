@@ -23,7 +23,7 @@ export class HealthcareController {
         try {
             const { id } = req.params;
             const organizationId = req.user?.organizationId;
-            console.log(`[HMS-DEBUG] Requesting Patient ID: "${(id as string).trim()}" for Org: "${organizationId}"`);
+            const cleanId = (id as string || '').trim();
 
             if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
 
@@ -33,8 +33,8 @@ export class HealthcareController {
                         { organizationId: organizationId as string },
                         {
                             OR: [
-                                { id: (id as string).trim() },
-                                { patientId: (id as string).trim() }
+                                { id: cleanId },
+                                { patientId: cleanId }
                             ]
                         }
                     ]
@@ -63,16 +63,16 @@ export class HealthcareController {
                 }
             });
 
-            if (!patient) {
-                console.warn(`[HMS-DEBUG] Patient Record NOT FOUND for ID: "${id}" in Org: "${organizationId}"`);
-                return res.status(404).json({ error: 'Patient not found' });
-            }
+            if (!patient) return res.status(404).json({ error: 'Patient not found' });
 
-            console.log(`[HMS-DEBUG] Found Patient: ${patient.fullName} (${patient.patientId})`);
             res.json(patient);
-        } catch (error) {
-            console.error('[HMS-DEBUG] CRITICAL ERROR:', error);
-            res.status(500).json({ error: 'Failed to fetch patient details' });
+        } catch (error: any) {
+            console.error('[HMS] Error fetching patient details:', error);
+            res.status(500).json({
+                error: 'Failed to fetch patient details',
+                message: error.message,
+                code: error.code
+            });
         }
     }
 
