@@ -37,7 +37,7 @@ export class HealthcareController {
                     },
                     appointments: {
                         include: { doctor: true },
-                        orderBy: { appointmentDate: 'desc' }
+                        orderBy: { startDatetime: 'desc' }
                     },
                     transactions: {
                         orderBy: { transactionDate: 'desc' }
@@ -110,6 +110,25 @@ export class HealthcareController {
         }
     }
 
+    // Medical Records
+    static async createMedicalRecord(req: AuthRequest, res: Response) {
+        try {
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const record = await prisma.medicalRecord.create({
+                data: {
+                    ...req.body,
+                    organizationId
+                },
+                include: { doctor: true }
+            });
+            res.status(201).json(record);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to create medical record' });
+        }
+    }
+
     // Doctors
     static async getDoctors(req: AuthRequest, res: Response) {
         try {
@@ -118,11 +137,243 @@ export class HealthcareController {
 
             const doctors = await prisma.doctor.findMany({
                 where: { organizationId },
+                include: {
+                    department: true,
+                    qualification: true,
+                    specialization: true,
+                    documents: true
+                },
                 orderBy: { fullName: 'asc' }
             });
             res.json(doctors);
         } catch (error) {
             res.status(500).json({ error: 'Failed to fetch doctors' });
+        }
+    }
+
+    static async getDoctor(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const doctor = await prisma.doctor.findFirst({
+                where: { id: id as string, organizationId: organizationId as string },
+                include: {
+                    department: true,
+                    qualification: true,
+                    specialization: true,
+                    documents: true,
+                    appointments: {
+                        include: { patient: true },
+                        orderBy: { startDatetime: 'desc' }
+                    }
+                }
+            });
+
+            if (!doctor) return res.status(404).json({ error: 'Doctor not found' });
+            res.json(doctor);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to fetch doctor details' });
+        }
+    }
+
+    static async createDoctor(req: AuthRequest, res: Response) {
+        try {
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const doctor = await prisma.doctor.create({
+                data: {
+                    ...req.body,
+                    organizationId
+                }
+            });
+            res.status(201).json(doctor);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to create doctor' });
+        }
+    }
+
+    static async updateDoctor(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            await prisma.doctor.updateMany({
+                where: { id: id as string, organizationId: organizationId as string },
+                data: req.body
+            });
+            res.json({ message: 'Doctor updated successfully' });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to update doctor' });
+        }
+    }
+
+    static async deleteDoctor(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            await prisma.doctor.deleteMany({
+                where: { id: id as string, organizationId: organizationId as string }
+            });
+            res.json({ message: 'Doctor deleted successfully' });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to delete doctor' });
+        }
+    }
+
+    // Departments
+    static async getDepartments(req: AuthRequest, res: Response) {
+        try {
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const departments = await prisma.department.findMany({
+                where: { organizationId },
+                orderBy: { name: 'asc' }
+            });
+            res.json(departments);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to fetch departments' });
+        }
+    }
+
+    static async createDepartment(req: AuthRequest, res: Response) {
+        try {
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const department = await prisma.department.create({
+                data: { ...req.body, organizationId }
+            });
+            res.status(201).json(department);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to create department' });
+        }
+    }
+
+    static async updateDepartment(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            await prisma.department.updateMany({
+                where: { id: id as string, organizationId: organizationId as string },
+                data: req.body
+            });
+            res.json({ message: 'Department updated successfully' });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to update department' });
+        }
+    }
+
+    static async deleteDepartment(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            await prisma.department.deleteMany({
+                where: { id: id as string, organizationId: organizationId as string }
+            });
+            res.json({ message: 'Department deleted successfully' });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to delete department' });
+        }
+    }
+
+    // Qualifications
+    static async getQualifications(req: AuthRequest, res: Response) {
+        try {
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const data = await prisma.doctorQualification.findMany({
+                where: { organizationId },
+                orderBy: { name: 'asc' }
+            });
+            res.json(data);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to fetch' });
+        }
+    }
+
+    static async createQualification(req: AuthRequest, res: Response) {
+        try {
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const item = await prisma.doctorQualification.create({
+                data: { ...req.body, organizationId }
+            });
+            res.status(201).json(item);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to create' });
+        }
+    }
+
+    static async deleteQualification(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            await prisma.doctorQualification.deleteMany({
+                where: { id: id as string, organizationId: organizationId as string }
+            });
+            res.json({ message: 'Deleted successfully' });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to delete' });
+        }
+    }
+
+    // Specializations
+    static async getSpecializations(req: AuthRequest, res: Response) {
+        try {
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const data = await prisma.doctorSpecialization.findMany({
+                where: { organizationId },
+                orderBy: { name: 'asc' }
+            });
+            res.json(data);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to fetch' });
+        }
+    }
+
+    static async createSpecialization(req: AuthRequest, res: Response) {
+        try {
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const item = await prisma.doctorSpecialization.create({
+                data: { ...req.body, organizationId }
+            });
+            res.status(201).json(item);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to create' });
+        }
+    }
+
+    static async deleteSpecialization(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            await prisma.doctorSpecialization.deleteMany({
+                where: { id: id as string, organizationId: organizationId as string }
+            });
+            res.json({ message: 'Deleted successfully' });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to delete' });
         }
     }
 
@@ -138,11 +389,105 @@ export class HealthcareController {
                     patient: true,
                     doctor: true
                 },
-                orderBy: { appointmentDate: 'desc' }
+                orderBy: { startDatetime: 'desc' }
             });
             res.json(appointments);
         } catch (error) {
             res.status(500).json({ error: 'Failed to fetch appointments' });
+        }
+    }
+
+    static async createAppointment(req: AuthRequest, res: Response) {
+        try {
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const appointment = await prisma.appointment.create({
+                data: {
+                    ...req.body,
+                    organizationId
+                }
+            });
+            res.status(201).json(appointment);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to book' });
+        }
+    }
+
+    static async updateAppointment(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            await prisma.appointment.updateMany({
+                where: { id: id as string, organizationId: organizationId as string },
+                data: req.body
+            });
+            res.json({ message: 'Updated' });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed' });
+        }
+    }
+
+    static async deleteAppointment(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            await prisma.appointment.deleteMany({
+                where: { id: id as string, organizationId: organizationId as string }
+            });
+            res.json({ message: 'Deleted' });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed' });
+        }
+    }
+
+    // Doctor Documents
+    static async getDoctorDocuments(req: AuthRequest, res: Response) {
+        try {
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const docs = await prisma.doctorDocument.findMany({
+                where: { organizationId },
+                include: { doctor: true },
+                orderBy: { createdAt: 'desc' }
+            });
+            res.json(docs);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed' });
+        }
+    }
+
+    static async createDoctorDocument(req: AuthRequest, res: Response) {
+        try {
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const doc = await prisma.doctorDocument.create({
+                data: { ...req.body, organizationId }
+            });
+            res.status(201).json(doc);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed' });
+        }
+    }
+
+    static async deleteDoctorDocument(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            await prisma.doctorDocument.deleteMany({
+                where: { id: id as string, organizationId: organizationId as string }
+            });
+            res.json({ message: 'Deleted' });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed' });
         }
     }
 
@@ -274,7 +619,7 @@ export class HealthcareController {
                 prisma.appointment.count({
                     where: {
                         organizationId,
-                        appointmentDate: { gte: today, lt: tomorrow }
+                        startDatetime: { gte: today, lt: tomorrow }
                     }
                 }),
                 prisma.healthcareTransaction.aggregate({
@@ -316,6 +661,76 @@ export class HealthcareController {
             });
         } catch (error) {
             res.status(500).json({ error: 'Failed to fetch summary stats' });
+        }
+    }
+
+    // Prescriptions
+    static async getPrescriptions(req: AuthRequest, res: Response) {
+        try {
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const prescriptions = await prisma.prescription.findMany({
+                where: { organizationId },
+                include: {
+                    patient: true,
+                    doctor: true,
+                    items: {
+                        include: { medicine: true }
+                    }
+                },
+                orderBy: { createdAt: 'desc' }
+            });
+            res.json(prescriptions);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to fetch prescriptions' });
+        }
+    }
+
+    static async getPrescription(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const prescription = await prisma.prescription.findFirst({
+                where: { id, organizationId },
+                include: {
+                    patient: true,
+                    doctor: true,
+                    items: {
+                        include: { medicine: true }
+                    },
+                    appointment: true
+                }
+            });
+
+            if (!prescription) return res.status(404).json({ error: 'Prescription not found' });
+            res.json(prescription);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to fetch prescription details' });
+        }
+    }
+
+    static async createPrescription(req: AuthRequest, res: Response) {
+        try {
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const { items, ...rest } = req.body;
+
+            const prescription = await prisma.prescription.create({
+                data: {
+                    ...rest,
+                    organizationId,
+                    items: {
+                        create: items
+                    }
+                }
+            });
+            res.status(201).json(prescription);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to create prescription' });
         }
     }
 }
