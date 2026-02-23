@@ -25,10 +25,19 @@ export class HealthcareController {
             const organizationId = req.user?.organizationId;
             if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
 
+            // Using findFirst instead of findUnique because we need to filter by both ID and organizationId
+            // without having a composite unique constraint in the schema.
             const patient = await prisma.patient.findFirst({
                 where: {
-                    id: id as string,
-                    organizationId: organizationId as string
+                    AND: [
+                        { organizationId: organizationId as string },
+                        {
+                            OR: [
+                                { id: id as string },
+                                { patientId: id as string }
+                            ]
+                        }
+                    ]
                 },
                 include: {
                     medicalRecords: {
@@ -57,6 +66,7 @@ export class HealthcareController {
             if (!patient) return res.status(404).json({ error: 'Patient not found' });
             res.json(patient);
         } catch (error) {
+            console.error('Error fetching patient details:', error);
             res.status(500).json({ error: 'Failed to fetch patient details' });
         }
     }
