@@ -10,7 +10,7 @@ export class HealthcareController {
             if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
 
             const patients = await prisma.patient.findMany({
-                where: { organizationId },
+                where: { organizationId: organizationId as string },
                 orderBy: { createdAt: 'desc' }
             });
             res.json(patients);
@@ -23,18 +23,18 @@ export class HealthcareController {
         try {
             const { id } = req.params;
             const organizationId = req.user?.organizationId;
+            console.log(`[HMS-DEBUG] Requesting Patient ID: "${(id as string).trim()}" for Org: "${organizationId}"`);
+
             if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
 
-            // Using findFirst instead of findUnique because we need to filter by both ID and organizationId
-            // without having a composite unique constraint in the schema.
             const patient = await prisma.patient.findFirst({
                 where: {
                     AND: [
                         { organizationId: organizationId as string },
                         {
                             OR: [
-                                { id: id as string },
-                                { patientId: id as string }
+                                { id: (id as string).trim() },
+                                { patientId: (id as string).trim() }
                             ]
                         }
                     ]
@@ -63,10 +63,15 @@ export class HealthcareController {
                 }
             });
 
-            if (!patient) return res.status(404).json({ error: 'Patient not found' });
+            if (!patient) {
+                console.warn(`[HMS-DEBUG] Patient Record NOT FOUND for ID: "${id}" in Org: "${organizationId}"`);
+                return res.status(404).json({ error: 'Patient not found' });
+            }
+
+            console.log(`[HMS-DEBUG] Found Patient: ${patient.fullName} (${patient.patientId})`);
             res.json(patient);
         } catch (error) {
-            console.error('Error fetching patient details:', error);
+            console.error('[HMS-DEBUG] CRITICAL ERROR:', error);
             res.status(500).json({ error: 'Failed to fetch patient details' });
         }
     }
