@@ -128,7 +128,7 @@ export class HealthcareController {
             const record = await prisma.medicalRecord.create({
                 data: {
                     ...req.body,
-                    organizationId
+                    organizationId: organizationId as string
                 },
                 include: { doctor: true }
             });
@@ -597,7 +597,7 @@ export class HealthcareController {
             if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
 
             const transactions = await prisma.healthcareTransaction.findMany({
-                where: { organizationId },
+                where: { organizationId: organizationId as string },
                 include: { patient: true },
                 orderBy: { transactionDate: 'desc' }
             });
@@ -615,7 +615,7 @@ export class HealthcareController {
             const transaction = await prisma.healthcareTransaction.create({
                 data: {
                     ...req.body,
-                    organizationId
+                    organizationId: organizationId as string
                 },
                 include: { patient: true }
             });
@@ -699,7 +699,7 @@ export class HealthcareController {
             if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
 
             const prescriptions = await prisma.prescription.findMany({
-                where: { organizationId },
+                where: { organizationId: organizationId as string },
                 include: {
                     patient: true,
                     doctor: true,
@@ -722,7 +722,10 @@ export class HealthcareController {
             if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
 
             const prescription = await prisma.prescription.findFirst({
-                where: { id, organizationId },
+                where: {
+                    id: id as string,
+                    organizationId: organizationId as string
+                },
                 include: {
                     patient: true,
                     doctor: true,
@@ -750,7 +753,7 @@ export class HealthcareController {
             const prescription = await prisma.prescription.create({
                 data: {
                     ...rest,
-                    organizationId,
+                    organizationId: organizationId as string,
                     items: {
                         create: items
                     }
