@@ -27,6 +27,7 @@ export class HealthcareController {
 
             if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
 
+            // 1. First, fetch the patient ensuring they belong to the organization
             const patient = await prisma.patient.findFirst({
                 where: {
                     AND: [
@@ -38,60 +39,50 @@ export class HealthcareController {
                             ]
                         }
                     ]
-                },
-                include: {
-                    medicalRecords: {
-                        include: { doctor: true },
-                        orderBy: { visitDate: 'desc' }
-                    },
-                    appointments: {
-                        include: { doctor: true },
-                        orderBy: { startDatetime: 'desc' }
-                    },
-                    transactions: {
-                        orderBy: { transactionDate: 'desc' }
-                    },
-                    prescriptions: {
-                        include: {
-                            doctor: true,
-                            items: {
-                                include: { medicine: true }
-                            }
-                        },
-                        orderBy: { createdAt: 'desc' }
-                    }
                 }
             });
 
             if (!patient) {
-                // FALLBACK: Try without includes to see if it's a relation issue
-                const barePatient = await prisma.patient.findFirst({
-                    where: {
-                        AND: [
-                            { organizationId: organizationId as string },
-                            {
-                                OR: [
-                                    { id: cleanId },
-                                    { patientId: cleanId }
-                                ]
-                            }
-                        ]
-                    }
-                });
-
-                if (barePatient) {
-                    return res.status(500).json({
-                        error: 'Patient exists but details failed to load',
-                        details: 'A medical record or relation might be corrupted or missing for this patient.'
-                    });
-                }
-
                 return res.status(404).json({
                     error: `Patient ID "${cleanId}" not found in organization "${organizationId}".`
                 });
             }
 
-            res.json(patient);
+            // 2. Fetch related data separately to avoid "Patient Not Found" if a relation is missing/broken
+            const [medicalRecords, appointments, transactions, prescriptions] = await Promise.all([
+                prisma.medicalRecord.findMany({
+                    where: { patientId: patient.id },
+                    include: { doctor: true },
+                    orderBy: { visitDate: 'desc' }
+                }),
+                prisma.appointment.findMany({
+                    where: { patientId: patient.id },
+                    include: { doctor: true },
+                    orderBy: { startDatetime: 'desc' }
+                }),
+                prisma.healthcareTransaction.findMany({
+                    where: { patientId: patient.id },
+                    orderBy: { transactionDate: 'desc' }
+                }),
+                prisma.prescription.findMany({
+                    where: { patientId: patient.id },
+                    include: {
+                        doctor: true,
+                        items: { include: { medicine: true } }
+                    },
+                    orderBy: { createdAt: 'desc' }
+                })
+            ]);
+
+            // 3. Merge and return
+            res.json({
+                ...patient,
+                medicalRecords,
+                appointments,
+                transactions,
+                prescriptions
+            });
+
         } catch (error: any) {
             console.error('[HMS] Error fetching patient details:', error);
             res.status(500).json({
