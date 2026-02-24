@@ -613,6 +613,20 @@ export class HealthcareController {
             console.error('[HMS] Update Medicine Error:', error);
             res.status(500).json({ error: 'Failed to update medicine' });
         }
+    static async deleteMedicine(req: AuthRequest, res: Response) {
+        try {
+            const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            await prisma.medicine.delete({
+                where: { id, organizationId }
+            });
+            res.status(204).send();
+        } catch (error) {
+            console.error('[HMS] Delete Medicine Error:', error);
+            res.status(500).json({ error: 'Failed to delete medicine' });
+        }
     }
 
     // Laboratory
