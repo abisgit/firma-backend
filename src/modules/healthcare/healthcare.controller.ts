@@ -27,68 +27,62 @@ export class HealthcareController {
 
             if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
 
-            // 1. First, fetch the patient ensuring they belong to the organization
-            const patient = await prisma.patient.findFirst({
-                where: {
-                    AND: [
-                        { organizationId: organizationId as string },
-                        {
-                            OR: [
-                                { id: cleanId },
-                                { patientId: cleanId }
-                            ]
-                        }
-                    ]
-                }
-            });
+            // Check if it's a UUID to decide whether to query by 'id'
+            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
 
-            if (!patient) {
-                return res.status(404).json({
-                    error: `Patient ID "${cleanId}" not found in organization "${organizationId}".`
+            // Fetch with relations in a single query
+            let patient: any = null;
+
+            if (isUuid) {
+                patient = await prisma.patient.findFirst({
+                    where: { id: cleanId, organizationId },
+                    include: {
+                        medicalRecords: { include: { doctor: true }, orderBy: { visitDate: 'desc' } },
+                        appointments: { include: { doctor: true }, orderBy: { startDatetime: 'desc' } },
+                        transactions: { orderBy: { transactionDate: 'desc' } },
+                        prescriptions: {
+                            include: {
+                                doctor: true,
+                                items: { include: { medicine: true } }
+                            },
+                            orderBy: { createdAt: 'desc' }
+                        }
+                    }
                 });
             }
 
-            // 2. Fetch related data separately to avoid "Patient Not Found" if a relation is missing/broken
-            const [medicalRecords, appointments, transactions, prescriptions] = await Promise.all([
-                prisma.medicalRecord.findMany({
-                    where: { patientId: patient.id },
-                    include: { doctor: true },
-                    orderBy: { visitDate: 'desc' }
-                }),
-                prisma.appointment.findMany({
-                    where: { patientId: patient.id },
-                    include: { doctor: true },
-                    orderBy: { startDatetime: 'desc' }
-                }),
-                prisma.healthcareTransaction.findMany({
-                    where: { patientId: patient.id },
-                    orderBy: { transactionDate: 'desc' }
-                }),
-                prisma.prescription.findMany({
-                    where: { patientId: patient.id },
+            if (!patient) {
+                patient = await prisma.patient.findFirst({
+                    where: { patientId: cleanId, organizationId },
                     include: {
-                        doctor: true,
-                        items: { include: { medicine: true } }
-                    },
-                    orderBy: { createdAt: 'desc' }
-                })
-            ]);
+                        medicalRecords: { include: { doctor: true }, orderBy: { visitDate: 'desc' } },
+                        appointments: { include: { doctor: true }, orderBy: { startDatetime: 'desc' } },
+                        transactions: { orderBy: { transactionDate: 'desc' } },
+                        prescriptions: {
+                            include: {
+                                doctor: true,
+                                items: { include: { medicine: true } }
+                            },
+                            orderBy: { createdAt: 'desc' }
+                        }
+                    }
+                });
+            }
 
-            // 3. Merge and return
-            res.json({
-                ...patient,
-                medicalRecords,
-                appointments,
-                transactions,
-                prescriptions
-            });
+            if (!patient) {
+                return res.status(404).json({
+                    error: `Patient Record "${cleanId}" not found in this organization.`
+                });
+            }
+
+            res.json(patient);
 
         } catch (error: any) {
             console.error('[HMS] Error fetching patient details:', error);
             res.status(500).json({
                 error: 'Failed to fetch patient details',
                 message: error.message,
-                code: error.code
+                details: error.code
             });
         }
     }
