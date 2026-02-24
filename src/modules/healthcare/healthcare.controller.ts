@@ -22,67 +22,84 @@ export class HealthcareController {
     static async getPatient(req: AuthRequest, res: Response) {
         try {
             const { id } = req.params;
-            const organizationId = req.user?.organizationId;
+            const organizationId = req.user?.organizationId as string;
             const cleanId = (id as string || '').trim();
 
             if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
 
-            // Check if it's a UUID to decide whether to query by 'id'
+            // Detect if identifier is a UUID to target the correct database field
             const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
 
-            // Fetch with relations in a single query
             let patient: any = null;
 
+            // Step 1: Securely fetch the core patient record
             if (isUuid) {
                 patient = await prisma.patient.findFirst({
-                    where: { id: cleanId, organizationId },
-                    include: {
-                        medicalRecords: { include: { doctor: true }, orderBy: { visitDate: 'desc' } },
-                        appointments: { include: { doctor: true }, orderBy: { startDatetime: 'desc' } },
-                        transactions: { orderBy: { transactionDate: 'desc' } },
-                        prescriptions: {
-                            include: {
-                                doctor: true,
-                                items: { include: { medicine: true } }
-                            },
-                            orderBy: { createdAt: 'desc' }
-                        }
-                    }
+                    where: { id: cleanId, organizationId }
                 });
-            }
-
-            if (!patient) {
+            } else {
                 patient = await prisma.patient.findFirst({
-                    where: { patientId: cleanId, organizationId },
-                    include: {
-                        medicalRecords: { include: { doctor: true }, orderBy: { visitDate: 'desc' } },
-                        appointments: { include: { doctor: true }, orderBy: { startDatetime: 'desc' } },
-                        transactions: { orderBy: { transactionDate: 'desc' } },
-                        prescriptions: {
-                            include: {
-                                doctor: true,
-                                items: { include: { medicine: true } }
-                            },
-                            orderBy: { createdAt: 'desc' }
-                        }
-                    }
+                    where: { patientId: cleanId, organizationId }
                 });
             }
 
             if (!patient) {
-                return res.status(404).json({
-                    error: `Patient Record "${cleanId}" not found in this organization.`
-                });
+                return res.status(404).json({ error: 'Patient not found in this organization' });
             }
 
-            res.json(patient);
+            // Step 2: Fetch related medical data with safety wrappers to prevent 500s on data orphans
+            const medicalRecords = await prisma.medicalRecord.findMany({
+                where: { patientId: patient.id },
+                include: { doctor: true },
+                orderBy: { visitDate: 'desc' }
+            }).catch(err => {
+                console.error('[HMS] Relation Error (medicalRecords):', err.message);
+                return [];
+            });
+
+            const appointments = await prisma.appointment.findMany({
+                where: { patientId: patient.id },
+                include: { doctor: true },
+                orderBy: { startDatetime: 'desc' }
+            }).catch(err => {
+                console.error('[HMS] Relation Error (appointments):', err.message);
+                return [];
+            });
+
+            const transactions = await prisma.healthcareTransaction.findMany({
+                where: { patientId: patient.id },
+                orderBy: { transactionDate: 'desc' }
+            }).catch(err => {
+                console.error('[HMS] Relation Error (transactions):', err.message);
+                return [];
+            });
+
+            const prescriptions = await prisma.prescription.findMany({
+                where: { patientId: patient.id },
+                include: {
+                    doctor: true,
+                    items: { include: { medicine: true } }
+                },
+                orderBy: { createdAt: 'desc' }
+            }).catch(err => {
+                console.error('[HMS] Relation Error (prescriptions):', err.message);
+                return [];
+            });
+
+            // Step 3: Return consolidated patient data
+            return res.json({
+                ...patient,
+                medicalRecords,
+                appointments,
+                transactions,
+                prescriptions
+            });
 
         } catch (error: any) {
-            console.error('[HMS] Error fetching patient details:', error);
-            res.status(500).json({
-                error: 'Failed to fetch patient details',
-                message: error.message,
-                details: error.code
+            console.error('[HMS] CRITICAL Failure in getPatient:', error);
+            return res.status(500).json({
+                error: 'An unexpected error occurred while fetching patient data',
+                message: error.message
             });
         }
     }
