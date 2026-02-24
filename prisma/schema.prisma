@@ -746,7 +746,11 @@ model Medicine {
   id               String            @id @default(uuid())
   name             String
   category         String
-  stock            Int               @default(0)
+  strength         String?           @default("N/A")
+  form             String?           @default("Tablet")
+  commonUse        String?
+  details          String?
+  stock            Int               @default(0) // Inventory
   expiryDate       DateTime
   status           String            @default("Available")
   organizationId   String

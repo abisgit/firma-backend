@@ -52,6 +52,8 @@ router.delete('/doctor-documents/:id', HealthcareController.deleteDoctorDocument
 
 // Other
 router.get('/medicines', HealthcareController.getMedicines);
+router.post('/medicines', HealthcareController.createMedicine);
+router.put('/medicines/:id', HealthcareController.updateMedicine);
 router.get('/lab-tests', HealthcareController.getLabTests);
 router.post('/lab-tests', HealthcareController.createLabTest);
 router.put('/lab-tests/:id', HealthcareController.updateLabTest);

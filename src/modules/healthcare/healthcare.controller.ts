@@ -559,6 +559,62 @@ export class HealthcareController {
         }
     }
 
+    static async createMedicine(req: AuthRequest, res: Response) {
+        try {
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const { name, category, strength, form, commonUse, details, stock, expiryDate } = req.body;
+
+            const medicine = await (prisma.medicine as any).create({
+                data: {
+                    name,
+                    category,
+                    strength,
+                    form,
+                    commonUse,
+                    details,
+                    stock: parseInt(stock),
+                    expiryDate: new Date(expiryDate),
+                    organizationId
+                }
+            });
+            res.status(201).json(medicine);
+        } catch (error) {
+            console.error('[HMS] Create Medicine Error:', error);
+            res.status(500).json({ error: 'Failed to create medicine' });
+        }
+    }
+
+    static async updateMedicine(req: AuthRequest, res: Response) {
+        try {
+            const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const { name, category, strength, form, commonUse, details, stock, expiryDate, status } = req.body;
+
+            const medicine = await (prisma.medicine as any).update({
+                where: { id, organizationId },
+                data: {
+                    name,
+                    category,
+                    strength,
+                    form,
+                    commonUse,
+                    details,
+                    stock: stock !== undefined ? parseInt(stock) : undefined,
+                    expiryDate: expiryDate ? new Date(expiryDate) : undefined,
+                    status
+                }
+            });
+            res.json(medicine);
+        } catch (error) {
+            console.error('[HMS] Update Medicine Error:', error);
+            res.status(500).json({ error: 'Failed to update medicine' });
+        }
+    }
+
     // Laboratory
     static async getLabTests(req: AuthRequest, res: Response) {
         try {

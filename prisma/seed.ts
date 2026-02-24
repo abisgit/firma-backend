@@ -679,6 +679,61 @@ async function main() {
         skipDuplicates: true
     });
 
+    // 9. Medicines (New)
+    await prisma.medicine.createMany({
+        data: [
+            {
+                name: "Amoxicillin",
+                category: "Antibiotics",
+                strength: "500 mg",
+                form: "Capsule",
+                commonUse: "Bacterial infections",
+                details: "Broad-spectrum antibiotic",
+                stock: 250,
+                expiryDate: new Date('2026-12-31'),
+                status: "Available",
+                organizationId: stPauls.id
+            },
+            {
+                name: "Paracetamol",
+                category: "Pain Relievers / Fever",
+                strength: "500 mg",
+                form: "Tablet",
+                commonUse: "Fever, mild pain",
+                details: "Analgesic and antipyretic",
+                stock: 1000,
+                expiryDate: new Date('2027-06-30'),
+                status: "Available",
+                organizationId: stPauls.id
+            },
+            {
+                name: "Cetirizine",
+                category: "Cold & Cough",
+                strength: "10 mg",
+                form: "Tablet",
+                commonUse: "Allergy",
+                details: "Antihistamine",
+                stock: 500,
+                expiryDate: new Date('2026-08-15'),
+                status: "Available",
+                organizationId: stPauls.id
+            },
+            {
+                name: "Amlodipine",
+                category: "Blood Pressure",
+                strength: "5 mg",
+                form: "Tablet",
+                commonUse: "Hypertension",
+                details: "Calcium channel blocker",
+                stock: 300,
+                expiryDate: new Date('2026-11-20'),
+                status: "Available",
+                organizationId: stPauls.id
+            },
+        ],
+        skipDuplicates: true
+    });
+
     console.log('✅ Created comprehensive healthcare data for St. Paul\'s Hospital');
 
     // =============================================
