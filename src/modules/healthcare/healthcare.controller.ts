@@ -564,7 +564,7 @@ export class HealthcareController {
             const organizationId = req.user?.organizationId;
             if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
 
-            const { name, category, strength, form, commonUse, details, stock, expiryDate } = req.body;
+            const { name, category, strength, form, commonUse, details, stock, price, expiryDate } = req.body;
 
             const medicine = await (prisma.medicine as any).create({
                 data: {
@@ -575,6 +575,7 @@ export class HealthcareController {
                     commonUse,
                     details,
                     stock: parseInt(stock),
+                    price: price ? parseFloat(price) : 0.0,
                     expiryDate: new Date(expiryDate),
                     organizationId
                 }
@@ -592,7 +593,7 @@ export class HealthcareController {
             const organizationId = req.user?.organizationId;
             if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
 
-            const { name, category, strength, form, commonUse, details, stock, expiryDate, status } = req.body;
+            const { name, category, strength, form, commonUse, details, stock, price, expiryDate, status } = req.body;
 
             const medicine = await (prisma.medicine as any).update({
                 where: { id, organizationId },
@@ -604,6 +605,7 @@ export class HealthcareController {
                     commonUse,
                     details,
                     stock: stock !== undefined ? parseInt(stock) : undefined,
+                    price: price !== undefined ? parseFloat(price) : undefined,
                     expiryDate: expiryDate ? new Date(expiryDate) : undefined,
                     status
                 }

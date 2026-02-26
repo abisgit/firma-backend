@@ -690,6 +690,7 @@ async function main() {
                 commonUse: "Bacterial infections",
                 details: "Broad-spectrum antibiotic",
                 stock: 250,
+                price: 15.50,
                 expiryDate: new Date('2026-12-31'),
                 status: "Available",
                 organizationId: stPauls.id
@@ -702,6 +703,7 @@ async function main() {
                 commonUse: "Fever, mild pain",
                 details: "Analgesic and antipyretic",
                 stock: 1000,
+                price: 5.00,
                 expiryDate: new Date('2027-06-30'),
                 status: "Available",
                 organizationId: stPauls.id
@@ -714,6 +716,7 @@ async function main() {
                 commonUse: "Allergy",
                 details: "Antihistamine",
                 stock: 500,
+                price: 8.75,
                 expiryDate: new Date('2026-08-15'),
                 status: "Available",
                 organizationId: stPauls.id
@@ -726,6 +729,7 @@ async function main() {
                 commonUse: "Hypertension",
                 details: "Calcium channel blocker",
                 stock: 300,
+                price: 12.00,
                 expiryDate: new Date('2026-11-20'),
                 status: "Available",
                 organizationId: stPauls.id
