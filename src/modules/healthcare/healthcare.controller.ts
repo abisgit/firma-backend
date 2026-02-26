@@ -879,4 +879,39 @@ export class HealthcareController {
             res.status(500).json({ error: 'Failed to create prescription' });
         }
     }
+
+    static async dispensePrescription(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const organizationId = req.user?.organizationId;
+            if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
+
+            const prescription = await prisma.prescription.findFirst({
+                where: { id: id as string, organizationId: organizationId as string, status: 'Pending' },
+                include: { items: true }
+            });
+
+            if (!prescription) {
+                return res.status(404).json({ error: 'Pending prescription not found' });
+            }
+
+            await prisma.$transaction(async (tx) => {
+                for (const item of prescription.items) {
+                    await tx.medicine.update({
+                        where: { id: item.medicineId },
+                        data: { stock: { decrement: 1 } }
+                    });
+                }
+                await tx.prescription.update({
+                    where: { id: prescription.id },
+                    data: { status: 'Dispensed' }
+                });
+            });
+
+            res.json({ message: 'Prescription dispensed and stock updated' });
+        } catch (error: any) {
+            console.error('[HMS] Dispense Error:', error);
+            res.status(500).json({ error: 'Failed to dispense prescription', details: error.message });
+        }
+    }
 }

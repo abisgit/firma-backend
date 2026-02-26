@@ -67,5 +67,6 @@ router.get('/summary', HealthcareController.getSummaryStats);
 router.get('/prescriptions', HealthcareController.getPrescriptions);
 router.get('/prescriptions/:id', HealthcareController.getPrescription);
 router.post('/prescriptions', HealthcareController.createPrescription);
+router.patch('/prescriptions/:id/dispense', HealthcareController.dispensePrescription);
 
 export default router;
