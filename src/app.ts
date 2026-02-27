@@ -1,166 +1,3 @@
-// import express from 'express';
-// import cors from 'cors';
-// import helmet from 'helmet';
-// import path from 'path';
-// import fs from 'fs';
-// import { env } from './config/env';
-// import { errorHandler } from './middleware/error.middleware';
-
-// // Routes
-// import authRoutes from './modules/auth/auth.routes';
-// import docRoutes from './modules/documents/documents.routes';
-// import orgRoutes from './modules/organizations/organizations.routes';
-// import templateRoutes from './modules/templates/templates.routes';
-// import stampRoutes from './modules/stamps/stamps.routes';
-// import letterRoutes from './modules/letters/letters.routes';
-// import hrRoutes from './modules/hr/hr.routes';
-// import userRoutes from './modules/users/users.routes';
-// import messageRoutes from './modules/messages/messages.routes';
-// import marketingRoutes from './modules/marketing/marketing.routes';
-// import tenantRoutes from './modules/tenants/tenants.routes';
-// import studentRoutes from './modules/students/students.routes';
-// import teacherRoutes from './modules/teachers/teachers.routes';
-// import classRoutes from './modules/classes/classes.routes';
-// import attendanceRoutes from './modules/attendance/attendance.routes';
-// import gradeRoutes from './modules/grades/grades.routes';
-// import timetableRoutes from './modules/timetable/timetable.routes';
-// import subjectRoutes from './modules/subjects/subjects.routes';
-// import eventRoutes from './modules/events/events.routes';
-// import parentRoutes from './modules/parents/parents.routes';
-// import academicRoutes from './modules/academic/academic.routes';
-// import invoiceRoutes from './modules/invoices/invoices.routes';
-// import bankRoutes from './modules/banks/banks.routes';
-// import healthcareRoutes from './modules/healthcare/healthcare.routes';
-
-// const app = express();
-
-// /**
-//  * =============================
-//  * 1️⃣ SECURITY (Helmet)
-//  * =============================
-//  */
-// app.use(
-//     helmet({
-//         crossOriginResourcePolicy: false, // allow images/static files
-//     })
-// );
-
-// /**
-//  * =============================
-//  * 2️⃣ CORS CONFIGURATION
-//  * =============================
-//  */
-
-// const allowedOrigins = [
-//     'https://dashboard.firmasafe.com',
-//     'http://localhost:3000', // for local dev
-// ];
-
-// const corsOptions: cors.CorsOptions = {
-//     origin: function (origin, callback) {
-//         if (!origin) return callback(null, true); // allow Postman/server-to-server
-
-//         if (allowedOrigins.includes(origin)) {
-//             callback(null, true);
-//         } else {
-//             callback(new Error('Not allowed by CORS'));
-//         }
-//     },
-//     credentials: true,
-//     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-//     allowedHeaders: ['Content-Type', 'Authorization'],
-// };
-
-// app.use(cors(corsOptions));
-
-// // Handle preflight requests properly
-// app.options('/*', cors(corsOptions));
-
-// /**
-//  * =============================
-//  * 3️⃣ BODY PARSERS
-//  * =============================
-//  */
-// app.use(express.json({ limit: '10mb' }));
-// app.use(express.urlencoded({ limit: '10mb', extended: true }));
-
-// /**
-//  * =============================
-//  * 4️⃣ REQUEST LOGGER (Non-blocking)
-//  * =============================
-//  */
-// app.use((req, res, next) => {
-//     const log = `${new Date().toISOString()} - ${req.method} ${req.originalUrl}\n`;
-//     fs.appendFile('request.log', log, (err) => {
-//         if (err) console.error('Log write error:', err);
-//     });
-//     next();
-// });
-
-// /**
-//  * =============================
-//  * 5️⃣ STATIC FILES
-//  * =============================
-//  */
-// app.use(
-//     '/uploads',
-//     express.static(path.join(process.cwd(), 'public', 'uploads'))
-// );
-
-// /**
-//  * =============================
-//  * 6️⃣ HEALTH CHECK
-//  * =============================
-//  */
-// app.get('/health', (req, res) => {
-//     res.status(200).json({ status: 'OK' });
-// });
-
-// /**
-//  * =============================
-//  * 7️⃣ MAIN ROUTES
-//  * =============================
-//  */
-// app.use('/auth', authRoutes);
-// app.use('/documents', docRoutes);
-// app.use('/organizations', orgRoutes);
-// app.use('/templates', templateRoutes);
-// app.use('/stamps', stampRoutes);
-// app.use('/letters', letterRoutes);
-// app.use('/users', userRoutes);
-// app.use('/messages', messageRoutes);
-// app.use('/marketing', marketingRoutes);
-// app.use('/tenants', tenantRoutes);
-// app.use('/hr', hrRoutes);
-// app.use('/students', studentRoutes);
-// app.use('/teachers', teacherRoutes);
-// app.use('/classes', classRoutes);
-// app.use('/attendance', attendanceRoutes);
-// app.use('/grades', gradeRoutes);
-// app.use('/timetable', timetableRoutes);
-// app.use('/subjects', subjectRoutes);
-// app.use('/events', eventRoutes);
-// app.use('/parents', parentRoutes);
-// app.use('/academic', academicRoutes);
-// app.use('/invoices', invoiceRoutes);
-// app.use('/banks', bankRoutes);
-// app.use('/healthcare', healthcareRoutes);
-
-// /**
-//  * =============================
-//  * 8️⃣ GLOBAL ERROR HANDLER
-//  * =============================
-//  */
-// app.use(errorHandler);
-
-// export default app;
-
-
-
-
-
-
-
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -192,6 +29,7 @@ import invoiceRoutes from './modules/invoices/invoices.routes';
 import bankRoutes from './modules/banks/banks.routes';
 import healthcareRoutes from './modules/healthcare/healthcare.routes';
 import path from 'path';
+import fs from 'fs';
 
 // ... imports
 
@@ -207,6 +45,9 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+// ✅ FIXED: write logs to /app/logs/request.log (ensure volume is mounted)
+const logDir = path.join(process.cwd(), 'logs');
+if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
 app.use((req, res, next) => {
     const log = `${new Date().toISOString()} - ${req.method} ${req.url}\n`;
     require('fs').appendFileSync('request.log', log);
