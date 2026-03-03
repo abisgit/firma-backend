@@ -36,7 +36,7 @@ const app = express();
 app.use(helmet({ crossOriginResourcePolicy: false }));
 
 app.use(cors({
-    origin: 'https://dashboard.firmasafe.com',
+    origin: ['https://dashboard.firmasafe.com', 'http://localhost:3000'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
