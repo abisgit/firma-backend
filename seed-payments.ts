@@ -28,24 +28,6 @@ async function seed() {
             description: 'Chemistry Lab Fee',
             organizationId: student.user.organizationId!,
             status: InvoiceStatus.UNPAID
-        },
-        {
-            studentId: student.id,
-            type: PaymentType.LIBRARY_FINE,
-            amount: 15,
-            description: 'Overdue: "Clean Code"',
-            organizationId: student.user.organizationId!,
-            status: InvoiceStatus.PAID,
-            paymentDate: new Date()
-        },
-        {
-            studentId: student.id,
-            type: PaymentType.BUS_FEE,
-            amount: 500,
-            description: 'Monthly Transport - March',
-            organizationId: student.user.organizationId!,
-            status: InvoiceStatus.PENDING,
-            transactionNumber: 'TX-123456789'
         }
     ];
 

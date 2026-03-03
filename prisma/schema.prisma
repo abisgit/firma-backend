@@ -48,6 +48,7 @@ model Organization {
   healthcareTransactions HealthcareTransaction[]
   prescriptions        Prescription[]
   educationPayments    EducationPayment[]
+  feeCollections       FeeCollection[]
 }
 
 model RegistrationRequest {
@@ -292,22 +293,43 @@ model Student {
   payments        EducationPayment[]
 }
 
+model FeeCollection {
+  id              String             @id @default(uuid())
+  name            String
+  amount          Float
+  dueDate         DateTime
+  targetType      FeeTarget          @default(ALL)
+  targetGrade     String?
+  organizationId  String
+  organization    Organization       @relation(fields: [organizationId], references: [id])
+  payments        EducationPayment[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+}
+
+enum FeeTarget {
+  ALL
+  GRADE
+}
+
 model EducationPayment {
-  id                String        @id @default(uuid())
+  id                String         @id @default(uuid())
   studentId         String
-  student           Student       @relation(fields: [studentId], references: [id])
+  student           Student        @relation(fields: [studentId], references: [id])
+  feeCollectionId   String?
+  feeCollection     FeeCollection? @relation(fields: [feeCollectionId], references: [id])
   type              PaymentType
   amount            Float
   description       String?
-  status            InvoiceStatus @default(UNPAID)
+  status            InvoiceStatus  @default(UNPAID)
   bankId            String?
-  bank              Bank?         @relation(fields: [bankId], references: [id])
+  bank              Bank?          @relation(fields: [bankId], references: [id])
   transactionNumber String?
   paymentDate       DateTime?
   organizationId    String
-  organization      Organization  @relation(fields: [organizationId], references: [id])
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  organization      Organization   @relation(fields: [organizationId], references: [id])
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 }
 
 enum PaymentType {

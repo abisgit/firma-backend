@@ -815,8 +815,27 @@ export class HealthcareController {
             const organizationId = req.user?.organizationId;
             if (!organizationId) return res.status(403).json({ error: 'Organization identifier missing' });
 
+            const { status, search } = req.query;
+
+            const where: any = { organizationId: organizationId as string };
+
+            if (status && status !== 'All Status') {
+                where.status = status;
+            }
+
+            if (search) {
+                const searchVal = (search as string).toLowerCase();
+                where.OR = [
+                    { prescriptionId: { contains: searchVal, mode: 'insensitive' } },
+                    { patient: { fullName: { contains: searchVal, mode: 'insensitive' } } },
+                    { patient: { patientId: { contains: searchVal, mode: 'insensitive' } } },
+                    { doctor: { fullName: { contains: searchVal, mode: 'insensitive' } } },
+                    { doctor: { doctorCode: { contains: searchVal, mode: 'insensitive' } } },
+                ];
+            }
+
             const prescriptions = await prisma.prescription.findMany({
-                where: { organizationId: organizationId as string },
+                where,
                 include: {
                     patient: true,
                     doctor: true,
@@ -828,6 +847,7 @@ export class HealthcareController {
             });
             res.json(prescriptions);
         } catch (error) {
+            console.error('[HMS] getPrescriptions Error:', error);
             res.status(500).json({ error: 'Failed to fetch prescriptions' });
         }
     }
