@@ -47,6 +47,7 @@ model Organization {
   labTests             LabTest[]
   healthcareTransactions HealthcareTransaction[]
   prescriptions        Prescription[]
+  educationPayments    EducationPayment[]
 }
 
 model RegistrationRequest {
@@ -288,6 +289,34 @@ model Student {
   class           Class?            @relation(fields: [classId], references: [id])
   user            User              @relation(fields: [userId], references: [id])
   guardians       StudentGuardian[]
+  payments        EducationPayment[]
+}
+
+model EducationPayment {
+  id                String        @id @default(uuid())
+  studentId         String
+  student           Student       @relation(fields: [studentId], references: [id])
+  type              PaymentType
+  amount            Float
+  description       String?
+  status            InvoiceStatus @default(UNPAID)
+  bankId            String?
+  bank              Bank?         @relation(fields: [bankId], references: [id])
+  transactionNumber String?
+  paymentDate       DateTime?
+  organizationId    String
+  organization      Organization  @relation(fields: [organizationId], references: [id])
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+}
+
+enum PaymentType {
+  TUITION_FEE
+  LAB_FEES
+  LIBRARY_FINE
+  SPORTS_FEE
+  BUS_FEE
+  OTHER
 }
 
 model Teacher {
@@ -641,6 +670,7 @@ model Bank {
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  educationPayments EducationPayment[]
 }
 
 // Healthcare Models
