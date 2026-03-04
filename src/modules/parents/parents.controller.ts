@@ -4,11 +4,13 @@ import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import { AuthRequest } from '../../middleware/auth.middleware';
 
+import { generateRandomPassword } from '../../utils/password';
+
 const createParentSchema = z.object({
     firstName: z.string().min(2),
     lastName: z.string().min(2),
     email: z.string().email(),
-    password: z.string().min(6),
+    password: z.string().min(6).optional(),
     phoneNumber: z.string().optional(),
     studentIds: z.array(z.string()).min(1),
     relationship: z.enum(['FATHER', 'MOTHER', 'PARENT', 'GUARDIAN', 'OTHER']).default('PARENT'),
@@ -66,7 +68,8 @@ export const createParent = async (req: AuthRequest, res: Response, next: NextFu
             return res.status(400).json({ message: 'User does not belong to an organization' });
         }
 
-        const { firstName, lastName, email, password, phoneNumber, studentIds, relationship } = createParentSchema.parse(req.body);
+        const { firstName, lastName, email, password: providedPassword, phoneNumber, studentIds, relationship } = createParentSchema.parse(req.body);
+        const password = providedPassword || generateRandomPassword();
 
         // Check if user exists
         const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -93,6 +96,9 @@ export const createParent = async (req: AuthRequest, res: Response, next: NextFu
             const parent = await (tx as any).parent.create({
                 data: {
                     userId: user.id
+                },
+                include: {
+                    user: true
                 }
             });
 
@@ -105,7 +111,7 @@ export const createParent = async (req: AuthRequest, res: Response, next: NextFu
                 }))
             });
 
-            return { user, parent };
+            return { user, parent, password };
         });
 
         res.status(201).json(result);
@@ -169,7 +175,10 @@ export const updateParent = async (req: AuthRequest, res: Response, next: NextFu
                 data: {
                     fullName,
                     phoneNumber,
-                    isActive
+                    isActive,
+                    ...(req.body.password && {
+                        passwordHash: await bcrypt.hash(req.body.password, 10)
+                    })
                 }
             });
 

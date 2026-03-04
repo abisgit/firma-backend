@@ -32,7 +32,7 @@ export const getPaymentRequests = async (req: any, res: Response, next: NextFunc
             const payments = await prisma.educationPayment.findMany({
                 where,
                 include: {
-                    student: { include: { user: true } },
+                    student: { include: { user: true, class: true } },
                     bank: true,
                     feeCollection: true
                 },
@@ -48,7 +48,7 @@ export const getPaymentRequests = async (req: any, res: Response, next: NextFunc
         const payments = await prisma.educationPayment.findMany({
             where,
             include: {
-                student: { include: { user: true } },
+                student: { include: { user: true, class: true } },
                 bank: true,
                 feeCollection: true
             },

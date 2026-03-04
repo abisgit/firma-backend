@@ -5,12 +5,14 @@ import bcrypt from 'bcrypt';
 import { AuthRequest } from '../../middleware/auth.middleware';
 import { Role } from '../../config/permissions';
 
+import { generateRandomPassword } from '../../utils/password';
+
 // Schema for creating a teacher
 const createTeacherSchema = z.object({
     firstName: z.string().min(2),
     lastName: z.string().min(2),
     email: z.string().email(),
-    password: z.string().min(6),
+    password: z.string().min(6).optional(),
     employeeNumber: z.string().min(1),
     phoneNumber: z.string().optional(),
     subjectIds: z.array(z.string()).optional(),
@@ -22,6 +24,7 @@ const updateTeacherSchema = z.object({
     firstName: z.string().min(2).optional(),
     lastName: z.string().min(2).optional(),
     email: z.string().email().optional(),
+    password: z.string().min(6).optional(),
     phoneNumber: z.string().optional(),
     subjectIds: z.array(z.string()).optional(),
     classIds: z.array(z.string()).optional(),
@@ -80,7 +83,8 @@ export const createTeacher = async (req: AuthRequest, res: Response, next: NextF
             return res.status(400).json({ message: 'User does not belong to an organization' });
         }
 
-        const { firstName, lastName, email, password, employeeNumber, phoneNumber, subjectIds, classIds } = createTeacherSchema.parse(req.body);
+        const { firstName, lastName, email, password: providedPassword, employeeNumber, phoneNumber, subjectIds, classIds } = createTeacherSchema.parse(req.body);
+        const password = providedPassword || generateRandomPassword();
 
         // Check if user exists
         const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -114,6 +118,9 @@ export const createTeacher = async (req: AuthRequest, res: Response, next: NextF
                 data: {
                     userId: user.id,
                     employeeNumber
+                },
+                include: {
+                    user: true
                 }
             });
 
@@ -135,7 +142,7 @@ export const createTeacher = async (req: AuthRequest, res: Response, next: NextF
                 });
             }
 
-            return { user, teacher };
+            return { user, teacher, password };
         });
 
         res.status(201).json(result);
@@ -171,6 +178,9 @@ export const updateTeacher = async (req: AuthRequest, res: Response, next: NextF
                 updateData.fullName = `${firstName} ${lastName}`;
             }
             if (data.email) updateData.email = data.email;
+            if (data.password) {
+                updateData.passwordHash = await bcrypt.hash(data.password, 10);
+            }
             if (data.phoneNumber) updateData.phoneNumber = data.phoneNumber;
             if (data.isActive !== undefined) updateData.isActive = data.isActive;
 

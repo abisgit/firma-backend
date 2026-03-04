@@ -5,12 +5,14 @@ import bcrypt from 'bcrypt';
 import { AuthRequest } from '../../middleware/auth.middleware';
 import { Role } from '../../config/permissions';
 
+import { generateRandomPassword } from '../../utils/password';
+
 // Schema for creating a student
 const createStudentSchema = z.object({
     firstName: z.string().min(2),
     lastName: z.string().min(2),
     email: z.string().email(),
-    password: z.string().min(6),
+    password: z.string().min(6).optional(),
     dateOfBirth: z.string().transform((str) => new Date(str)),
     gender: z.string().optional(),
     classId: z.string().optional(),
@@ -136,7 +138,8 @@ export const createStudent = async (req: AuthRequest, res: Response, next: NextF
             return res.status(400).json({ message: 'User does not belong to an organization' });
         }
 
-        const { firstName, lastName, email, password, dateOfBirth, classId } = createStudentSchema.parse(req.body);
+        const { firstName, lastName, email, password: providedPassword, dateOfBirth, classId } = createStudentSchema.parse(req.body);
+        const password = providedPassword || generateRandomPassword();
 
         // Check if user exists
         const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -204,11 +207,15 @@ export const createStudent = async (req: AuthRequest, res: Response, next: NextF
                     userId: user.id,
                     admissionNumber,
                     dateOfBirth,
-                    classId: classId || undefined
+                    classId: (classId && classId !== "") ? classId : null
+                },
+                include: {
+                    user: true,
+                    class: true
                 }
             });
 
-            return { user, student };
+            return { user, student, password };
         });
 
         res.status(201).json(result);
@@ -220,6 +227,7 @@ const updateStudentSchema = z.object({
     firstName: z.string().min(2).optional(),
     lastName: z.string().min(2).optional(),
     email: z.string().email().optional(),
+    password: z.string().min(6).optional(),
     dateOfBirth: z.string().transform((str) => new Date(str)).optional(),
     classId: z.string().optional(),
     isActive: z.boolean().optional(),
@@ -248,6 +256,9 @@ export const updateStudent = async (req: AuthRequest, res: Response, next: NextF
                 updateData.fullName = `${firstName} ${lastName}`;
             }
             if (data.email) updateData.email = data.email;
+            if (data.password) {
+                updateData.passwordHash = await bcrypt.hash(data.password, 10);
+            }
             if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
             if (Object.keys(updateData).length > 0) {
@@ -261,7 +272,7 @@ export const updateStudent = async (req: AuthRequest, res: Response, next: NextF
                 where: { id },
                 data: {
                     dateOfBirth: data.dateOfBirth,
-                    classId: data.classId || undefined
+                    classId: data.classId === "" ? null : data.classId
                 },
                 include: {
                     user: {
