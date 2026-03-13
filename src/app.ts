@@ -27,6 +27,8 @@ import invoiceRoutes from './modules/invoices/invoices.routes';
 import bankRoutes from './modules/banks/banks.routes';
 import healthcareRoutes from './modules/healthcare/healthcare.routes';
 import educationPaymentsRoutes from './modules/education-payments/education-payments.routes';
+import arifPayRoutes from './modules/tenants/arifpay.routes';
+import chapaRoutes from './modules/tenants/chapa.routes';
 import path from 'path';
 import fs from 'fs';
 
@@ -106,6 +108,8 @@ app.use('/invoices', invoiceRoutes);
 app.use('/banks', bankRoutes);
 app.use('/healthcare', healthcareRoutes);
 app.use('/education-payments', educationPaymentsRoutes);
+app.use('/arifpay', arifPayRoutes);
+app.use('/chapa', chapaRoutes);
 
 app.use(errorHandler);
 

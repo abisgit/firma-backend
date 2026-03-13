@@ -35,6 +35,7 @@ model Organization {
   school               School?
   users                User[]
   invoices             Invoice[]
+  arifPayCheckouts     ArifPayCheckout[]
   patients             Patient[]
   doctors              Doctor[]
   departments          Department[]
@@ -49,6 +50,7 @@ model Organization {
   prescriptions        Prescription[]
   educationPayments    EducationPayment[]
   feeCollections       FeeCollection[]
+  chapaCheckouts       ChapaCheckout[]
 }
 
 model RegistrationRequest {
@@ -682,6 +684,58 @@ model Invoice {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
   paidAt            DateTime?
+  arifPayCheckout   ArifPayCheckout?
+  chapaCheckout     ChapaCheckout?
+}
+
+model ArifPayCheckout {
+  id              String        @id @default(uuid())
+  sessionId       String?       @unique // The ID returned by ArifPay
+  invoiceId       String?       @unique
+  invoice         Invoice?      @relation(fields: [invoiceId], references: [id])
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+  paymentMethods  String[]
+  amount          Float
+  currency        String        @default("ETB")
+  status          String        @default("PENDING") // PENDING, SUCCESS, FAILED, EXPIRED
+  items           Json?         // To store the items list: {name, quantity, price, description}[]
+  beneficiaries   Json?         // To store beneficiaries list: {accountNumber, bank, amount}[]
+  phone           String?
+  email           String?
+  cancelUrl       String?
+  successUrl      String?
+  errorUrl        String?
+  notifyUrl       String?
+  expireDate      DateTime?
+  nonce           String?
+  lang            String        @default("EN")
+  checkoutUrl     String?       // The URL to redirect the user to
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model ChapaCheckout {
+  id              String        @id @default(uuid())
+  tx_ref          String        @unique
+  invoiceId       String?       @unique
+  invoice         Invoice?      @relation(fields: [invoiceId], references: [id])
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+  amount          Float
+  currency        String        @default("ETB")
+  status          String        @default("PENDING") // PENDING, SUCCESS, FAILED
+  email           String?
+  first_name      String?
+  last_name       String?
+  phone_number    String?
+  customTitle     String?
+  description     String?
+  returnUrl       String?
+  callbackUrl     String?
+  checkoutUrl     String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 }
 
 model Bank {

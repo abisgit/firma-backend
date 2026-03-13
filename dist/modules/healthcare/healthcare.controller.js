@@ -13,8 +13,7 @@ class HealthcareController {
             if (!organizationId)
                 return res.status(403).json({ error: 'Organization identifier missing' });
             const patients = await db_1.default.patient.findMany({
-                // where: { organizationId },
-                include: { organization: true },
+                where: { organizationId: organizationId },
                 orderBy: { createdAt: 'desc' }
             });
             res.json(patients);
@@ -27,61 +26,76 @@ class HealthcareController {
         try {
             const { id } = req.params;
             const organizationId = req.user?.organizationId;
-            console.log(`[DEBUG] Fetching patient. ID: ${id}, OrgID: ${organizationId}`);
+            const cleanId = (id || '').trim();
             if (!organizationId)
                 return res.status(403).json({ error: 'Organization identifier missing' });
-            const patient = await db_1.default.patient.findFirst({
-                where: {
-                    OR: [
-                        { id: id },
-                        { patientId: id }
-                    ]
-                },
-                include: {
-                    medicalRecords: {
-                        include: { doctor: true },
-                        orderBy: { visitDate: 'desc' }
-                    },
-                    appointments: {
-                        include: { doctor: true },
-                        orderBy: { startDatetime: 'desc' }
-                    },
-                    transactions: {
-                        orderBy: { transactionDate: 'desc' }
-                    },
-                    prescriptions: {
-                        include: {
-                            doctor: true,
-                            items: {
-                                include: { medicine: true }
-                            }
-                        },
-                        orderBy: { createdAt: 'desc' }
-                    }
-                }
-            });
-            if (!patient) {
-                const allPatients = await db_1.default.patient.findMany({
-                    where: { organizationId: organizationId },
-                    select: { id: true, patientId: true, fullName: true }
-                });
-                console.log(`[DEBUG] Patient lookup failed for ID: "${id}" in Org: "${organizationId}"`);
-                console.log(`[DEBUG] Total patients in this org: ${allPatients.length}`);
-                console.log(`[DEBUG] First 5 patients:`, allPatients.slice(0, 5));
-                return res.status(404).json({
-                    error: 'Patient not found',
-                    debug: {
-                        attemptedId: id,
-                        orgId: organizationId,
-                        foundCount: allPatients.length
-                    }
+            // Detect if identifier is a UUID to target the correct database field
+            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
+            let patient = null;
+            // Step 1: Securely fetch the core patient record
+            if (isUuid) {
+                patient = await db_1.default.patient.findFirst({
+                    where: { id: cleanId, organizationId }
                 });
             }
-            res.json(patient);
+            else {
+                patient = await db_1.default.patient.findFirst({
+                    where: { patientId: cleanId, organizationId }
+                });
+            }
+            if (!patient) {
+                return res.status(404).json({ error: 'Patient not found in this organization' });
+            }
+            // Step 2: Fetch related medical data with safety wrappers to prevent 500s on data orphans
+            const medicalRecords = await db_1.default.medicalRecord.findMany({
+                where: { patientId: patient.id },
+                include: { doctor: true },
+                orderBy: { visitDate: 'desc' }
+            }).catch(err => {
+                console.error('[HMS] Relation Error (medicalRecords):', err.message);
+                return [];
+            });
+            const appointments = await db_1.default.appointment.findMany({
+                where: { patientId: patient.id },
+                include: { doctor: true },
+                orderBy: { startDatetime: 'desc' }
+            }).catch(err => {
+                console.error('[HMS] Relation Error (appointments):', err.message);
+                return [];
+            });
+            const transactions = await db_1.default.healthcareTransaction.findMany({
+                where: { patientId: patient.id },
+                orderBy: { transactionDate: 'desc' }
+            }).catch(err => {
+                console.error('[HMS] Relation Error (transactions):', err.message);
+                return [];
+            });
+            const prescriptions = await db_1.default.prescription.findMany({
+                where: { patientId: patient.id },
+                include: {
+                    doctor: true,
+                    items: { include: { medicine: true } }
+                },
+                orderBy: { createdAt: 'desc' }
+            }).catch(err => {
+                console.error('[HMS] Relation Error (prescriptions):', err.message);
+                return [];
+            });
+            // Step 3: Return consolidated patient data
+            return res.json({
+                ...patient,
+                medicalRecords,
+                appointments,
+                transactions,
+                prescriptions
+            });
         }
         catch (error) {
-            console.error('CRITICAL: Error fetching patient details:', error);
-            res.status(500).json({ error: 'Internal server error during patient lookup' });
+            console.error('[HMS] CRITICAL Failure in getPatient:', error);
+            return res.status(500).json({
+                error: 'An unexpected error occurred while fetching patient data',
+                message: error.message
+            });
         }
     }
     static async createPatient(req, res) {
@@ -539,6 +553,78 @@ class HealthcareController {
             res.status(500).json({ error: 'Failed to fetch inventory' });
         }
     }
+    static async createMedicine(req, res) {
+        try {
+            const organizationId = req.user?.organizationId;
+            if (!organizationId)
+                return res.status(403).json({ error: 'Organization identifier missing' });
+            const { name, category, strength, form, commonUse, details, stock, price, expiryDate } = req.body;
+            const medicine = await db_1.default.medicine.create({
+                data: {
+                    name,
+                    category,
+                    strength,
+                    form,
+                    commonUse,
+                    details,
+                    stock: parseInt(stock),
+                    price: price ? parseFloat(price) : 0.0,
+                    expiryDate: new Date(expiryDate),
+                    organizationId
+                }
+            });
+            res.status(201).json(medicine);
+        }
+        catch (error) {
+            console.error('[HMS] Create Medicine Error:', error);
+            res.status(500).json({ error: 'Failed to create medicine' });
+        }
+    }
+    static async updateMedicine(req, res) {
+        try {
+            const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
+            const organizationId = req.user?.organizationId;
+            if (!organizationId)
+                return res.status(403).json({ error: 'Organization identifier missing' });
+            const { name, category, strength, form, commonUse, details, stock, price, expiryDate, status } = req.body;
+            const medicine = await db_1.default.medicine.update({
+                where: { id, organizationId },
+                data: {
+                    name,
+                    category,
+                    strength,
+                    form,
+                    commonUse,
+                    details,
+                    stock: stock !== undefined ? parseInt(stock) : undefined,
+                    price: price !== undefined ? parseFloat(price) : undefined,
+                    expiryDate: expiryDate ? new Date(expiryDate) : undefined,
+                    status
+                }
+            });
+            res.json(medicine);
+        }
+        catch (error) {
+            console.error('[HMS] Update Medicine Error:', error);
+            res.status(500).json({ error: 'Failed to update medicine' });
+        }
+    }
+    static async deleteMedicine(req, res) {
+        try {
+            const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
+            const organizationId = req.user?.organizationId;
+            if (!organizationId)
+                return res.status(403).json({ error: 'Organization identifier missing' });
+            await db_1.default.medicine.delete({
+                where: { id, organizationId }
+            });
+            res.status(204).send();
+        }
+        catch (error) {
+            console.error('[HMS] Delete Medicine Error:', error);
+            res.status(500).json({ error: 'Failed to delete medicine' });
+        }
+    }
     // Laboratory
     static async getLabTests(req, res) {
         try {
@@ -712,8 +798,23 @@ class HealthcareController {
             const organizationId = req.user?.organizationId;
             if (!organizationId)
                 return res.status(403).json({ error: 'Organization identifier missing' });
+            const { status, search } = req.query;
+            const where = { organizationId: organizationId };
+            if (status && status !== 'All Status') {
+                where.status = status;
+            }
+            if (search) {
+                const searchVal = search.toLowerCase();
+                where.OR = [
+                    { prescriptionId: { contains: searchVal, mode: 'insensitive' } },
+                    { patient: { fullName: { contains: searchVal, mode: 'insensitive' } } },
+                    { patient: { patientId: { contains: searchVal, mode: 'insensitive' } } },
+                    { doctor: { fullName: { contains: searchVal, mode: 'insensitive' } } },
+                    { doctor: { doctorCode: { contains: searchVal, mode: 'insensitive' } } },
+                ];
+            }
             const prescriptions = await db_1.default.prescription.findMany({
-                where: { organizationId: organizationId },
+                where,
                 include: {
                     patient: true,
                     doctor: true,
@@ -726,6 +827,7 @@ class HealthcareController {
             res.json(prescriptions);
         }
         catch (error) {
+            console.error('[HMS] getPrescriptions Error:', error);
             res.status(500).json({ error: 'Failed to fetch prescriptions' });
         }
     }
@@ -776,6 +878,38 @@ class HealthcareController {
         }
         catch (error) {
             res.status(500).json({ error: 'Failed to create prescription' });
+        }
+    }
+    static async dispensePrescription(req, res) {
+        try {
+            const { id } = req.params;
+            const organizationId = req.user?.organizationId;
+            if (!organizationId)
+                return res.status(403).json({ error: 'Organization identifier missing' });
+            const prescription = await db_1.default.prescription.findFirst({
+                where: { id: id, organizationId: organizationId, status: 'Pending' },
+                include: { items: true }
+            });
+            if (!prescription) {
+                return res.status(404).json({ error: 'Pending prescription not found' });
+            }
+            await db_1.default.$transaction(async (tx) => {
+                for (const item of prescription.items) {
+                    await tx.medicine.update({
+                        where: { id: item.medicineId },
+                        data: { stock: { decrement: 1 } }
+                    });
+                }
+                await tx.prescription.update({
+                    where: { id: prescription.id },
+                    data: { status: 'Dispensed' }
+                });
+            });
+            res.json({ message: 'Prescription dispensed and stock updated' });
+        }
+        catch (error) {
+            console.error('[HMS] Dispense Error:', error);
+            res.status(500).json({ error: 'Failed to dispense prescription', details: error.message });
         }
     }
 }

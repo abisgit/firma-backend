@@ -43,6 +43,9 @@ router.post('/doctor-documents', healthcare_controller_1.HealthcareController.cr
 router.delete('/doctor-documents/:id', healthcare_controller_1.HealthcareController.deleteDoctorDocument);
 // Other
 router.get('/medicines', healthcare_controller_1.HealthcareController.getMedicines);
+router.post('/medicines', healthcare_controller_1.HealthcareController.createMedicine);
+router.put('/medicines/:id', healthcare_controller_1.HealthcareController.updateMedicine);
+router.delete('/medicines/:id', healthcare_controller_1.HealthcareController.deleteMedicine);
 router.get('/lab-tests', healthcare_controller_1.HealthcareController.getLabTests);
 router.post('/lab-tests', healthcare_controller_1.HealthcareController.createLabTest);
 router.put('/lab-tests/:id', healthcare_controller_1.HealthcareController.updateLabTest);
@@ -54,4 +57,5 @@ router.get('/summary', healthcare_controller_1.HealthcareController.getSummarySt
 router.get('/prescriptions', healthcare_controller_1.HealthcareController.getPrescriptions);
 router.get('/prescriptions/:id', healthcare_controller_1.HealthcareController.getPrescription);
 router.post('/prescriptions', healthcare_controller_1.HealthcareController.createPrescription);
+router.patch('/prescriptions/:id/dispense', healthcare_controller_1.HealthcareController.dispensePrescription);
 exports.default = router;

@@ -7,12 +7,13 @@ exports.updateTeacher = exports.createTeacher = exports.getTeachers = void 0;
 const db_1 = __importDefault(require("../../config/db"));
 const zod_1 = require("zod");
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const password_1 = require("../../utils/password");
 // Schema for creating a teacher
 const createTeacherSchema = zod_1.z.object({
     firstName: zod_1.z.string().min(2),
     lastName: zod_1.z.string().min(2),
     email: zod_1.z.string().email(),
-    password: zod_1.z.string().min(6),
+    password: zod_1.z.string().min(6).optional(),
     employeeNumber: zod_1.z.string().min(1),
     phoneNumber: zod_1.z.string().optional(),
     subjectIds: zod_1.z.array(zod_1.z.string()).optional(),
@@ -23,6 +24,7 @@ const updateTeacherSchema = zod_1.z.object({
     firstName: zod_1.z.string().min(2).optional(),
     lastName: zod_1.z.string().min(2).optional(),
     email: zod_1.z.string().email().optional(),
+    password: zod_1.z.string().min(6).optional(),
     phoneNumber: zod_1.z.string().optional(),
     subjectIds: zod_1.z.array(zod_1.z.string()).optional(),
     classIds: zod_1.z.array(zod_1.z.string()).optional(),
@@ -78,7 +80,8 @@ const createTeacher = async (req, res, next) => {
         if (!organizationId) {
             return res.status(400).json({ message: 'User does not belong to an organization' });
         }
-        const { firstName, lastName, email, password, employeeNumber, phoneNumber, subjectIds, classIds } = createTeacherSchema.parse(req.body);
+        const { firstName, lastName, email, password: providedPassword, employeeNumber, phoneNumber, subjectIds, classIds } = createTeacherSchema.parse(req.body);
+        const password = providedPassword || (0, password_1.generateRandomPassword)();
         // Check if user exists
         const existingUser = await db_1.default.user.findUnique({ where: { email } });
         if (existingUser) {
@@ -107,6 +110,9 @@ const createTeacher = async (req, res, next) => {
                 data: {
                     userId: user.id,
                     employeeNumber
+                },
+                include: {
+                    user: true
                 }
             });
             if (subjectIds && subjectIds.length > 0) {
@@ -125,7 +131,7 @@ const createTeacher = async (req, res, next) => {
                     }))
                 });
             }
-            return { user, teacher };
+            return { user, teacher, password };
         });
         res.status(201).json(result);
     }
@@ -159,6 +165,9 @@ const updateTeacher = async (req, res, next) => {
             }
             if (data.email)
                 updateData.email = data.email;
+            if (data.password) {
+                updateData.passwordHash = await bcrypt_1.default.hash(data.password, 10);
+            }
             if (data.phoneNumber)
                 updateData.phoneNumber = data.phoneNumber;
             if (data.isActive !== undefined)

@@ -7,11 +7,12 @@ exports.updateParent = exports.getParentById = exports.createParent = exports.ge
 const db_1 = __importDefault(require("../../config/db"));
 const zod_1 = require("zod");
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const password_1 = require("../../utils/password");
 const createParentSchema = zod_1.z.object({
     firstName: zod_1.z.string().min(2),
     lastName: zod_1.z.string().min(2),
     email: zod_1.z.string().email(),
-    password: zod_1.z.string().min(6),
+    password: zod_1.z.string().min(6).optional(),
     phoneNumber: zod_1.z.string().optional(),
     studentIds: zod_1.z.array(zod_1.z.string()).min(1),
     relationship: zod_1.z.enum(['FATHER', 'MOTHER', 'PARENT', 'GUARDIAN', 'OTHER']).default('PARENT'),
@@ -66,7 +67,8 @@ const createParent = async (req, res, next) => {
         if (!organizationId) {
             return res.status(400).json({ message: 'User does not belong to an organization' });
         }
-        const { firstName, lastName, email, password, phoneNumber, studentIds, relationship } = createParentSchema.parse(req.body);
+        const { firstName, lastName, email, password: providedPassword, phoneNumber, studentIds, relationship } = createParentSchema.parse(req.body);
+        const password = providedPassword || (0, password_1.generateRandomPassword)();
         // Check if user exists
         const existingUser = await db_1.default.user.findUnique({ where: { email } });
         if (existingUser) {
@@ -89,6 +91,9 @@ const createParent = async (req, res, next) => {
             const parent = await tx.parent.create({
                 data: {
                     userId: user.id
+                },
+                include: {
+                    user: true
                 }
             });
             await tx.studentGuardian.createMany({
@@ -99,7 +104,7 @@ const createParent = async (req, res, next) => {
                     isPrimary: true
                 }))
             });
-            return { user, parent };
+            return { user, parent, password };
         });
         res.status(201).json(result);
     }
@@ -159,7 +164,10 @@ const updateParent = async (req, res, next) => {
                 data: {
                     fullName,
                     phoneNumber,
-                    isActive
+                    isActive,
+                    ...(req.body.password && {
+                        passwordHash: await bcrypt_1.default.hash(req.body.password, 10)
+                    })
                 }
             });
             // Update children mapping if studentIds provided

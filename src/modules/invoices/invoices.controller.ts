@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { SubscriptionTier, InvoiceStatus } from '@prisma/client';
 
 const PRICING: Record<SubscriptionTier, number> = {
-    STARTER: 99,
+    STARTER: 2,
     CONSORTIUM: 299,
     NATIONAL: 999,
     ENTERPRISE_LITE: 499

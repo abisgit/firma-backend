@@ -7,12 +7,13 @@ exports.updateStudent = exports.createStudent = exports.getStudentById = exports
 const db_1 = __importDefault(require("../../config/db"));
 const zod_1 = require("zod");
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const password_1 = require("../../utils/password");
 // Schema for creating a student
 const createStudentSchema = zod_1.z.object({
     firstName: zod_1.z.string().min(2),
     lastName: zod_1.z.string().min(2),
     email: zod_1.z.string().email(),
-    password: zod_1.z.string().min(6),
+    password: zod_1.z.string().min(6).optional(),
     dateOfBirth: zod_1.z.string().transform((str) => new Date(str)),
     gender: zod_1.z.string().optional(),
     classId: zod_1.z.string().optional(),
@@ -133,7 +134,8 @@ const createStudent = async (req, res, next) => {
         if (!organizationId) {
             return res.status(400).json({ message: 'User does not belong to an organization' });
         }
-        const { firstName, lastName, email, password, dateOfBirth, classId } = createStudentSchema.parse(req.body);
+        const { firstName, lastName, email, password: providedPassword, dateOfBirth, classId } = createStudentSchema.parse(req.body);
+        const password = providedPassword || (0, password_1.generateRandomPassword)();
         // Check if user exists
         const existingUser = await db_1.default.user.findUnique({ where: { email } });
         if (existingUser) {
@@ -190,10 +192,14 @@ const createStudent = async (req, res, next) => {
                     userId: user.id,
                     admissionNumber,
                     dateOfBirth,
-                    classId: classId || undefined
+                    classId: (classId && classId !== "") ? classId : null
+                },
+                include: {
+                    user: true,
+                    class: true
                 }
             });
-            return { user, student };
+            return { user, student, password };
         });
         res.status(201).json(result);
     }
@@ -206,6 +212,7 @@ const updateStudentSchema = zod_1.z.object({
     firstName: zod_1.z.string().min(2).optional(),
     lastName: zod_1.z.string().min(2).optional(),
     email: zod_1.z.string().email().optional(),
+    password: zod_1.z.string().min(6).optional(),
     dateOfBirth: zod_1.z.string().transform((str) => new Date(str)).optional(),
     classId: zod_1.z.string().optional(),
     isActive: zod_1.z.boolean().optional(),
@@ -231,6 +238,9 @@ const updateStudent = async (req, res, next) => {
             }
             if (data.email)
                 updateData.email = data.email;
+            if (data.password) {
+                updateData.passwordHash = await bcrypt_1.default.hash(data.password, 10);
+            }
             if (data.isActive !== undefined)
                 updateData.isActive = data.isActive;
             if (Object.keys(updateData).length > 0) {
@@ -243,7 +253,7 @@ const updateStudent = async (req, res, next) => {
                 where: { id },
                 data: {
                     dateOfBirth: data.dateOfBirth,
-                    classId: data.classId || undefined
+                    classId: data.classId === "" ? null : data.classId
                 },
                 include: {
                     user: {
